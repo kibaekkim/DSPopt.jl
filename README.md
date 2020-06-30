@@ -1,4 +1,6 @@
 # DSPopt.jl
+[![Build Status](https://travis-ci.com/kibaekkim/DSPopt.jl.svg?branch=master)](https://travis-ci.com/kibaekkim/DSPopt.jl)
+[![codecov](https://codecov.io/gh/kibaekkim/DSPopt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/kibaekkim/DSPopt.jl)
 
 DSPopt.jl is an interface to a parallel decomposition mixed-integer programming solver [DSP](https://github.com/Argonne-National-Laboratory/DSP). 
 This package allows users to define block structures in optimization model written in [StructJuMP](https://github.com/StructJuMP/StructJuMP.jl) 
