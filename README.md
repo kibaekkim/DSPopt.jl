@@ -11,7 +11,7 @@ and solve the block-structured problem using the parallle solver ``DSP``.
 > **_NOTE:_** You need to install solver [DSP](https://github.com/Argonne-National-Laboratory/DSP) first. This package provides an interface only.
 
 ```julia
-] add https://github.com/kibaekkim/DSPopt.jl.git
+] add DSPopt
 ```
 
 ## Examples
