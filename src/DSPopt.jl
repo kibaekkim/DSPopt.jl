@@ -54,6 +54,23 @@ function SJ.optimize!(m::SJ.StructuredModel; options...)
     return termination_status(m)
 end
 
+" write model into an MPS file "
+function writeMps!(m::SJ.StructuredModel, filename::AbstractString; options...)
+    # free any existing model pointer
+    freeModel(dspenv)
+
+    # set options
+    setoptions!(options)
+
+    # load problem
+    load_problem!(m)
+
+    # write problem into MPS file
+    writeMps!(dspenv, filename)
+
+    return
+end
+
 function get_model_data(m::SJ.StructuredModel)
 
     # Get a column-wise sparse matrix
