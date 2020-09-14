@@ -124,7 +124,7 @@ readParamFile(dsp::DSPProblem, param_file::AbstractString) = @dsp_ccall(
 readSmps(dsp::DSPProblem, filename::AbstractString) = @dsp_ccall(
     "readSmps", Cvoid, 
     (Ptr{Cvoid}, Ptr{UInt8}), 
-    dsp.p, convert(Vector{UInt8}, filename))
+    dsp.p, filename)
 
 loadFirstStage(dsp::DSPProblem, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadFirstStage", Cvoid,
@@ -238,5 +238,13 @@ setIntPtrParam(dsp::DSPProblem, name::String, n::Int, v::Vector{Int}) = @dsp_cca
     "setIntPtrParam", Cvoid, 
     (Ptr{Cvoid}, Ptr{UInt8}, Cint, Ptr{Cint}),
     dsp.p, name, convert(Cint, n), convert(Vector{Cint}, v))
+
+###############################################################################
+# Other functions
+###############################################################################
+writeMps!(dsp::DSPProblem, filename::AbstractString) = @dsp_ccall(
+    "writeMps", Cvoid, 
+    (Ptr{Cvoid}, Ptr{UInt8}), 
+    dsp.p, "$filename.mps")
 
 # end # end of module
