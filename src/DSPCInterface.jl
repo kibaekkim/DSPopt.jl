@@ -239,12 +239,4 @@ setIntPtrParam(dsp::DSPProblem, name::String, n::Int, v::Vector{Int}) = @dsp_cca
     (Ptr{Cvoid}, Ptr{UInt8}, Cint, Ptr{Cint}),
     dsp.p, name, convert(Cint, n), convert(Vector{Cint}, v))
 
-###############################################################################
-# Other functions
-###############################################################################
-writeMps!(dsp::DSPProblem, filename::AbstractString) = @dsp_ccall(
-    "writeMps", Cvoid, 
-    (Ptr{Cvoid}, Ptr{UInt8}), 
-    dsp.p, "$filename.mps")
-
 # end # end of module

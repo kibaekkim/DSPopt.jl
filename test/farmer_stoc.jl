@@ -118,8 +118,3 @@ end
         @test dsp.solve_type == DSPopt.Dual
     end
 end
-
-@testset "writeMps" begin
-    DSPopt.writeMps!(m, "farmer", is_stochastic = true)
-    @test isfile("farmer.mps")
-end
