@@ -43,9 +43,9 @@ end
     include("farmer_block.jl")
 end
 
-# @testset "dcap" begin
-#     include("dcap.jl")
-# end
+@testset "dcap" begin
+    include("dcap.jl")
+end
 
 @testset "Freeing DSPopt" begin
     DSPopt.freeEnv(dsp)
