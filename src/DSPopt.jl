@@ -54,23 +54,6 @@ function SJ.optimize!(m::SJ.StructuredModel; options...)
     return termination_status(m)
 end
 
-" write model into an MPS file "
-function writeMps!(m::SJ.StructuredModel, filename::AbstractString; options...)
-    # free any existing model pointer
-    freeModel(dspenv)
-
-    # set options
-    setoptions!(options)
-
-    # load problem
-    load_problem!(m)
-
-    # write problem into MPS file
-    writeMps!(dspenv, filename)
-
-    return
-end
-
 function get_model_data(m::SJ.StructuredModel)
 
     # Get a column-wise sparse matrix
@@ -91,8 +74,13 @@ function get_model_data(m::SJ.StructuredModel)
         else
             ctype = ctype * "C"
         end
-        clbd[vref.idx] = v.info.has_lb ? v.info.lower_bound : -Inf
-        cubd[vref.idx] = v.info.has_ub ? v.info.upper_bound : Inf
+        if v.info.binary
+            clbd[vref.idx] = 0.0
+            cubd[vref.idx] = 1.0
+        else
+            clbd[vref.idx] = v.info.has_lb ? v.info.lower_bound : -Inf
+            cubd[vref.idx] = v.info.has_ub ? v.info.upper_bound : Inf
+        end
         cname[vref.idx] = m.varnames[vref.idx]
     end
 

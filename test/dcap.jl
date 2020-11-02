@@ -33,6 +33,7 @@ Parameters (scenario):
 
 using StructJuMP
 using Random
+using MathOptInterface
 
 function DCAP(nR::Int, nN::Int, nT::Int, nS::Int, seed::Int=1)::StructuredModel
 
@@ -83,24 +84,20 @@ m = DCAP(2,2,3,3);
   @test length(m.variables) == 12
   @test length(m.constraints) == 6
   start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m)
-  @show clbd
-  @show cubd
-  @show ctype
+  @test clbd == zeros(Float64, 12)
+  @test cubd == [Inf, Inf, Inf, Inf, Inf, Inf, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  @test ctype == "CCCCCCBBBBBB"
   # print(m)
 end
 
 @testset "Child model $i" for (i,subm) in m.children
   start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm)
-  @show clbd
-  @show cubd
-  @show ctype
-end
-
-@testset "write MPS" begin
-  DSPopt.writeMps!(m, "dcap")
-  @test isfile("dcap.mps")
+  @test clbd == zeros(Float64, 18)
+  @test cubd == ones(Float64, 18)
+  @test ctype == "BBBBBBBBBBBBBBBBBB"
 end
 
 @testset "optimize!: $j" for j in [DSPopt.ExtensiveForm]
   status = DSPopt.optimize!(m, solve_type = j, is_stochastic = true, param = "params.txt")
+  @test status == MathOptInterface.OPTIMAL
 end
