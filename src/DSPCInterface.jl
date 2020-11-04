@@ -29,6 +29,7 @@ mutable struct DSPProblem
     block_ids::Vector{Integer}
 
     is_stochastic::Bool
+    is_quadratic::Bool
 
     # solve_type should be one of these:
     solve_type::Methods
@@ -37,6 +38,10 @@ mutable struct DSPProblem
     comm
     comm_size::Int
     comm_rank::Int
+
+    # linear and quadratic constraints of subproblems
+    quadConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}}
+    linConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}}
 
     function DSPProblem()
         prob = new(
@@ -53,10 +58,13 @@ mutable struct DSPProblem
             -1, # nblocks
             [], # block_ids
             false, # is_stochastic
+            false, # is_quadratic
             Dual, # solve_type
             nothing, # comm
             1, # comm_size
-            0 # comm_rank
+            0, # comm_rank
+            Dict(), # quadratic constraints
+            Dict() # linear constraints
         )
         prob.p = createEnv()
         finalizer(freeEnv, prob)
@@ -109,7 +117,17 @@ function freeModel(dsp::DSPProblem)
     dsp.nblocks = -1
     dsp.block_ids = []
     dsp.is_stochastic = false
+    dsp.is_quadratic = false
     dsp.solve_type = Dual
+    dsp.quadConstrs = Dict()
+    dsp.linConstrs = Dict()
+end
+
+###############################################################################
+# Create a model
+###############################################################################
+function createModel!(dsp::DSPProblem)
+    @dsp_ccall("createModel", Cint, (Ptr{Cvoid}, Cint, Cint), dsp.p, dsp.is_stochastic, dsp.is_quadratic)
 end
 
 ###############################################################################
@@ -136,13 +154,17 @@ loadSecondStage(dsp::DSPProblem, id, probability, start, index, value, clbd, cub
     (Ptr{Cvoid}, Cint, Cdouble, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
     dsp.p, id, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
 
+loadQuadraticRows(dsp::DSPProblem, id, nqrows::Int, linnzcnt::Vector{Int}, quadnzcnt::Vector{Int}, rhs::Vector{Float64}, sense::Vector{Int}, linstart::Vector{Int}, linind::Vector{Int}, linval::Vector{Float64}, quadstart::Vector{Int}, quadrow::Vector{Int}, quadcol::Vector{Int}, quadval::Vector{Float64}) = @dsp_ccall(
+    "loadQuadraticRows", Cvoid,
+    (Ptr{Cvoid}, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint},Ptr{Cint},Ptr{Cdouble}),
+    dsp.p, id, nqrows, convert(Vector{Cint}, linnzcnt), convert(Vector{Cint}, quadnzcnt), convert(Vector{Cdouble}, rhs), convert(Vector{Cint}, sense), convert(Vector{Cint}, linstart), convert(Vector{Cint}, linind), convert(Vector{Cdouble}, linval), convert(Vector{Cint}, quadstart), convert(Vector{Cint}, quadrow), convert(Vector{Cint}, quadcol), convert(Vector{Cdouble}, quadval))
+
 loadBlockProblem(dsp::DSPProblem, id, ncols, nrows, numels, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadBlockProblem", Cvoid, (
     Ptr{Cvoid}, Cint, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
     dsp.p, id, ncols, nrows, numels, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
 
 updateBlocks(dsp::DSPProblem) = @dsp_ccall("updateBlocks", Cvoid, (Ptr{Cvoid},), dsp.p)
-
 
 ###############################################################################
 # solve functions
@@ -234,6 +256,15 @@ setDimensions(dsp::DSPProblem, ncols1::Int, nrows1::Int, ncols2::Int, nrows2::In
     (Ptr{Cvoid}, Cint, Cint, Cint, Cint),
     dsp.p, convert(Cint, ncols1), convert(Cint, nrows1), convert(Cint, ncols2), convert(Cint, nrows2))
 
+setQcRowDataDimensions(dsp::DSPProblem) = @dsp_ccall(
+        "setQcRowDataDimensions", Cvoid,
+        (Ptr{Cvoid},), dsp.p)
+
+setQcDimensions(dsp::DSPProblem, id::Int, nqrows::Int) = @dsp_ccall(
+        "setQcDimensions", Cvoid,
+        (Ptr{Cvoid}, Cint, Cint),
+        dsp.p, id, nqrows)
+    
 setIntPtrParam(dsp::DSPProblem, name::String, n::Int, v::Vector{Int}) = @dsp_ccall(
     "setIntPtrParam", Cvoid, 
     (Ptr{Cvoid}, Ptr{UInt8}, Cint, Ptr{Cint}),
@@ -245,6 +276,6 @@ setIntPtrParam(dsp::DSPProblem, name::String, n::Int, v::Vector{Int}) = @dsp_cca
 writeMps!(dsp::DSPProblem, filename::AbstractString) = @dsp_ccall(
     "writeMps", Cvoid, 
     (Ptr{Cvoid}, Ptr{UInt8}), 
-    dsp.p, "$filename.mps")
+    dsp.p, "$filename")
 
 # end # end of module
