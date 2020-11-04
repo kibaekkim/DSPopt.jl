@@ -73,7 +73,7 @@ function writeMps!(m::SJ.StructuredModel, filename::AbstractString; options...)
 
     # create a model
     createModel!(dspenv)
-    
+
     # load problem
     load_problem!(m)
 
@@ -369,32 +369,32 @@ end
 function load_problem!(m::SJ.StructuredModel)
     # load problem from StructJuMP
     if dspenv.is_stochastic
-        loadStochasticProblem!(m, dspenv.linConstrs)
+        loadStochasticProblem!(m)
     else
-        loadStructuredProblem!(m, dspenv.linConstrs)
+        loadStructuredProblem!(m)
     end
 
     if dspenv.is_quadratic
-        loadQuadraticConstraints!(m, dspenv.quadConstrs)
+        loadQuadraticConstraints!(m)
     end
 
     setBlocks()
 end
 
-function loadQuadraticConstraints!(model::SJ.StructuredModel, quadConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}})
+function loadQuadraticConstraints!(model::SJ.StructuredModel)
     
     setQcRowDataDimensions(dspenv)
 
     # set problem data
     for (id, blk) in SJ.getchildren(model)
-        nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_qc_data(blk, quadConstrs[id])
+        nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_qc_data(blk, dspenv.quadConstrs[id])
 
         setQcDimensions(dspenv, id-1, nqrows)
         loadQuadraticRows(dspenv, id-1, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
     end
 end
 
-function loadStochasticProblem!(model::SJ.StructuredModel, linConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}})
+function loadStochasticProblem!(model::SJ.StructuredModel)
 
     nscen = SJ.num_scenarios(model)
     ncols1 = length(model.variables)
@@ -403,7 +403,7 @@ function loadStochasticProblem!(model::SJ.StructuredModel, linConstrs::Dict{Int6
     nrows2 = 0
     for (id, subm) in SJ.getchildren(model)
         ncols2 = length(subm.variables)
-        nrows2 = length(linConstrs[id])
+        nrows2 = length(dspenv.linConstrs[id])
         break
     end
 
@@ -437,7 +437,7 @@ function loadStochasticProblem!(model::SJ.StructuredModel, linConstrs::Dict{Int6
     end
 end
 
-function loadStructuredProblem!(model::SJ.StructuredModel, linConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}})
+function loadStructuredProblem!(model::SJ.StructuredModel)
 
     ncols1 = length(model.variables)
     nrows1 = length(model.constraints)
@@ -448,7 +448,7 @@ function loadStructuredProblem!(model::SJ.StructuredModel, linConstrs::Dict{Int6
     dspenv.colVal[0] = Vector{Float64}(undef, ncols1)
     for (id, blk) in SJ.getchildren(model)
         ncols2 = length(blk.variables)
-        nrows2 = length(linConstrs[id])
+        nrows2 = length(dspenv.linConstrs[id])
         dspenv.numCols[id] = ncols2
         dspenv.numRows[id] = nrows2
         dspenv.colVal[id] = Vector{Float64}(undef, ncols2)
@@ -465,7 +465,7 @@ function loadStructuredProblem!(model::SJ.StructuredModel, linConstrs::Dict{Int6
     for (id, blk) in SJ.getchildren(model)
         probability = SJ.getprobability(model)[id]
         ncols2 = length(blk.variables)
-        nrows2 = length(linConstrs[id])
+        nrows2 = length(dspenv.linConstrs[id])
         start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk, dspenv.linConstrs[id])
         loadBlockProblem(dspenv, id, ncols1 + ncols2, nrows2, start[end], 
             start, index, value, [clbd1; clbd], [cubd1; cubd], [ctype1; ctype], [obj1; obj], rlbd, rubd)
