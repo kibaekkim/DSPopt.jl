@@ -18,6 +18,8 @@ const MOI = MathOptInterface
 using JuMP # To reexport, should be using (not import)
 @SJ.exportall JuMP
 
+export WassersteinSet
+
 include("DSPCInterface.jl")
 
 function __init__()
@@ -35,6 +37,8 @@ function check_dsp()
         @error("DSP is not initialied.")
     end
 end
+
+include("Dro.jl")
 
 function SJ.optimize!(m::SJ.StructuredModel; options...)
 

@@ -47,6 +47,10 @@ end
     include("dcap.jl")
 end
 
+@testset "Distributionally robust extension" begin
+    include("Dro.jl")
+end
+
 @testset "Freeing DSPopt" begin
     DSPopt.freeEnv(dsp)
     @test dsp.p == C_NULL
