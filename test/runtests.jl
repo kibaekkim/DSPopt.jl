@@ -56,7 +56,7 @@ end
     include("farmer_block.jl")
 end
 
-@testset "dcap" begin
+@testset "dcap example" begin
     include("dcap.jl")
 end
 
