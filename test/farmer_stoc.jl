@@ -120,3 +120,8 @@ end
         @test length(dsp.linConstrs) == 0
     end
 end
+
+@testset "writeMps" begin
+    DSPopt.writeMps!(m, "farmer", is_stochastic = true)
+    @test isfile("farmer.mps")
+end
