@@ -82,7 +82,7 @@ m = DCAP(2,2,3,3);
 @testset "Parent model" begin
   @test length(m.variables) == 12
   @test length(m.constraints) == 6
-  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m)
+  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m, m.constraints)
   @show clbd
   @show cubd
   @show ctype
@@ -90,7 +90,7 @@ m = DCAP(2,2,3,3);
 end
 
 @testset "Child model $i" for (i,subm) in m.children
-  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm)
+  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm, subm.constraints)
   @show clbd
   @show cubd
   @show ctype

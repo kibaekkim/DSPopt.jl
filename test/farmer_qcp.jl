@@ -1,5 +1,5 @@
+using DSPopt
 using StructJuMP
-using Ipopt
 
 NS = 3;                        # number of scenarios
 probability = [1/3, 1/3, 1/3]; # probability

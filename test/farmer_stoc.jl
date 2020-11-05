@@ -1,4 +1,4 @@
-# using DSPopt
+using DSPopt
 using StructJuMP
 
 NS = 3;                        # number of scenarios
@@ -116,6 +116,8 @@ end
         @test dsp.block_ids == []
         @test dsp.is_stochastic == false
         @test dsp.solve_type == DSPopt.Dual
+        @test length(dsp.quadConstrs) == 0
+        @test length(dsp.linConstrs) == 0
     end
 end
 

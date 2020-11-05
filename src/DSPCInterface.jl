@@ -95,7 +95,7 @@ createEnv() = @dsp_ccall("createEnv", Ptr{Cvoid}, ())
 function freeEnv(dsp::DSPProblem)
     if dsp.p != C_NULL
         freeModel(dsp)
-        @dsp_ccall("freeEnv", Cvoid, (Ptr{Cvoid},), dsp.p)
+        @dsp_ccall("freeEnv", Cvoid, (Ref{Ptr{Cvoid}},), dsp.p)
         dsp.p = C_NULL
     end
     dsp.comm = nothing
