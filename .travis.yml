@@ -11,7 +11,6 @@ addons:
 
 julia:
   - 1.5
-  - 1.4
 
 before_install:
   - openssl aes-256-cbc -K $encrypted_c6029262c2c5_key -iv $encrypted_c6029262c2c5_iv -in deploy_rsa.enc -out /tmp/deploy_rsa -d
