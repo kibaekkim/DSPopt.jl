@@ -3,8 +3,8 @@ module DSPopt
 @enum Methods begin
     ExtensiveForm
     Benders
+    DW
     Dual
-    Legacy
 end
 
 using Libdl
@@ -277,7 +277,7 @@ end
 
 function solve!()
     if dspenv.comm_size == 1
-        if dspenv.solve_type == Legacy
+        if dspenv.solve_type == Dual
             if dspenv.is_stochastic
                 solveDd(dspenv);
             else
@@ -291,13 +291,13 @@ function solve!()
             end
         elseif dspenv.solve_type == ExtensiveForm
             solveDe(dspenv);
-        elseif dspenv.solve_type == Dual
+        elseif dspenv.solve_type == DW
             solveDw(dspenv);
         else
             @error("Unexpected error")
         end
     elseif dspenv.comm_size > 1
-        if dspenv.solve_type == Legacy
+        if dspenv.solve_type == Dual
             if dspenv.is_stochastic
                 solveDdMpi(dspenv);
             else
@@ -309,7 +309,7 @@ function solve!()
             else
                 @error("This method is available for stochastic programs only.")
             end
-        elseif dspenv.solve_type == Dual
+        elseif dspenv.solve_type == DW
             solveDwMpi(dspenv);
         elseif dspenv.solve_type == ExtensiveForm
             solveDe(dspenv);
@@ -330,7 +330,7 @@ function post_solve!()
     dspenv.primVal = getPrimalBound(dspenv) * dspenv.objective_sense
     dspenv.dualVal = getDualBound(dspenv) * dspenv.objective_sense
 
-    if dspenv.solve_type == Legacy
+    if dspenv.solve_type == Dual
         dspenv.rowVal = getDualSolution(dspenv)
     end
 

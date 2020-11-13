@@ -76,7 +76,7 @@ end
     dsp.is_stochastic = true
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
     @test DSPopt.termination_status(m) == MOI.OPTIMAL
-    if dsp.solve_type in [DSPopt.Dual, DSPopt.ExtensiveForm]
+    if dsp.solve_type in [DSPopt.DW, DSPopt.ExtensiveForm]
         @test isapprox(objective_value(m), -108390.)
     else
         @test objective_value(m) >= -108390.
@@ -85,7 +85,7 @@ end
 
     primsol = value()
     dualsol = dual()
-    if dsp.solve_type == DSPopt.Legacy
+    if dsp.solve_type == DSPopt.Dual
         for k = 0:3
             @test primsol[k] != []
         end
@@ -115,6 +115,6 @@ end
         @test dsp.nblocks == -1
         @test dsp.block_ids == []
         @test dsp.is_stochastic == false
-        @test dsp.solve_type == DSPopt.Dual
+        @test dsp.solve_type == DSPopt.DW
     end
 end

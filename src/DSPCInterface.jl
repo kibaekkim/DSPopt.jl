@@ -53,7 +53,7 @@ mutable struct DSPProblem
             -1, # nblocks
             [], # block_ids
             false, # is_stochastic
-            Dual, # solve_type
+            DW, # solve_type
             nothing, # comm
             1, # comm_size
             0 # comm_rank
@@ -109,7 +109,7 @@ function freeModel(dsp::DSPProblem)
     dsp.nblocks = -1
     dsp.block_ids = []
     dsp.is_stochastic = false
-    dsp.solve_type = Dual
+    dsp.solve_type = DW
 end
 
 ###############################################################################

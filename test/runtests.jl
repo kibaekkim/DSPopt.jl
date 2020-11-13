@@ -15,7 +15,7 @@ const dsp = DSPopt.dspenv
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.solve_type == DSPopt.Dual
+    @test dsp.solve_type == DSPopt.DW
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
     @test dsp.comm_rank == 0
@@ -63,7 +63,7 @@ end
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.solve_type == DSPopt.Dual
+    @test dsp.solve_type == DSPopt.DW
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
     @test dsp.comm_rank == 0

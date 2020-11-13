@@ -87,7 +87,7 @@ end
     @test ctype == ""
 end
 
-@testset "optimize!: $j" for j in [DSPopt.ExtensiveForm, DSPopt.Dual]
+@testset "optimize!: $j" for j in [DSPopt.ExtensiveForm, DSPopt.DW]
     status = DSPopt.optimize!(m, solve_type = j, is_stochastic = false)
     @test status == MOI.OPTIMAL
     @test isapprox(objective_value(m), -108390.)
@@ -139,6 +139,6 @@ end
         @test dsp.nblocks == -1
         @test dsp.block_ids == []
         @test dsp.is_stochastic == false
-        @test dsp.solve_type == DSPopt.Dual
+        @test dsp.solve_type == DSPopt.DW
     end
 end

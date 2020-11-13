@@ -48,7 +48,7 @@ end
 
 status = optimize!(m, 
     is_stochastic = true, # Needs to indicate that the model is a stochastic program.
-    solve_type = DSPopt.Dual, # see instances(DSPopt.Methods) for other methods
+    solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
 )
 
 # Comment out this line if you want to run in serial
