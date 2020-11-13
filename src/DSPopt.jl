@@ -235,6 +235,9 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
         start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
         loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
     end
+
+    # Set DRO data
+    loadDroData(dspenv, dspenv.dro)
 end
 
 function loadStructuredProblem!(model::SJ.StructuredModel)

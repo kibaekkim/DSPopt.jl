@@ -30,6 +30,8 @@ mutable struct DSPProblem
 
     is_stochastic::Bool
 
+    dro
+
     # solve_type should be one of these:
     solve_type::Methods
 
@@ -53,6 +55,7 @@ mutable struct DSPProblem
             -1, # nblocks
             [], # block_ids
             false, # is_stochastic
+            nothing, # dro
             DW, # solve_type
             nothing, # comm
             1, # comm_size
@@ -135,7 +138,7 @@ loadSecondStage(dsp::DSPProblem, id, probability, start, index, value, clbd, cub
     "loadSecondStage", Cvoid,
     (Ptr{Cvoid}, Cint, Cdouble, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
     dsp.p, id, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
-
+    
 loadBlockProblem(dsp::DSPProblem, id, ncols, nrows, numels, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadBlockProblem", Cvoid, (
     Ptr{Cvoid}, Cint, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
