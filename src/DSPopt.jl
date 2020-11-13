@@ -86,27 +86,46 @@ end
 function classifyConstrs(m::SJ.StructuredModel)
     
     if dspenv.is_quadratic
-        numQc = 0
+        nchildren = length(SJ.getchildren(m))
+        nquadsubs = 0
+        
         for (id, blk) in SJ.getchildren(m)
 
+            numQc = 0
+            numLc = 0
+            
             dspenv.quadConstrs[id] = Dict{Int64,AbstractConstraint}()
             dspenv.linConstrs[id] = Dict{Int64,AbstractConstraint}()
+            quadConstrs_temp = Dict{Int64,AbstractConstraint}()
             
             # partition the constraint set into linear constraints and quadratic constraints
-            for (i,c) in blk.constraints
-                if typeof(c.func) <: GenericQuadExpr
-                    dspenv.quadConstrs[id][i] = c
-                elseif typeof(c.func) <: GenericAffExpr
-                    dspenv.linConstrs[id][i] = c
-                    # print(i, " linconstrs: ", dspenv.linConstrs[i], "\n")
-                else 
-                    @warn("Current version accepts constraints that are either quadratic or affine.")
+            ## count the number of linear and quadratic constraints and adjust the indices of linear constraints so that its keys = 1:numLc[id]
+            for i = 1:length(blk.constraints)
+                c = blk.constraints[i]
+                if typeof(c.func) <: GenericAffExpr
+                    numLc += 1
+                    dspenv.linConstrs[id][numLc] = c
+                elseif (typeof(c.func) <: GenericQuadExpr)
+                    numQc += 1
+                    quadConstrs_temp[numQc] = c
+                else
+                    @error("Current version accepts constraints that are either quadratic or affine.")
                 end
             end
-            numQc += length(dspenv.quadConstrs[id])
+            
+            if numQc > 0
+                nquadsubs += 1
+                # adjust the indices of quadratic constraints so that its keys = numLc+1:nrows_core
+                for i = 1:numQc
+                    dspenv.quadConstrs[id][i + numLc] = quadConstrs_temp[i]
+                end
+
+                blk.constraints = merge(dspenv.linConstrs[id], dspenv.quadConstrs[id])
+                # print(id, " numLc: ", numLc), ", numQc: ", numQc), "\n")
+            end
         end
 
-        if numQc == 0
+        if nquadsubs == 0
             @warn("The model does not have any quadratic constraints. 'is_quadratic' option has turned off")
             dspenv.is_quadratic = false
         end
@@ -172,20 +191,20 @@ function get_constraint_matrix(m::SJ.StructuredModel, linConstrs::Dict{Int64,Abs
     if !is_parent
         num_cols += num_variables(SJ.getparent(m))
     end
-
+    
     # count the number of nonzero elements
     nnz = 0
     for (i,cons) in linConstrs
         nnz += length(cons.func.terms)
         num_rows += 1
     end
-
+    
     rind = Vector{Int}(undef, nnz)
     cind = Vector{Int}(undef, nnz)
     value = Vector{Float64}(undef, nnz)
     rlbd = Vector{Float64}(undef, num_rows)
     rubd = Vector{Float64}(undef, num_rows)
-
+    
     pos = 1
     for (i,cons) in linConstrs
         for (var,coef) in cons.func.terms
@@ -205,7 +224,7 @@ function get_constraint_matrix(m::SJ.StructuredModel, linConstrs::Dict{Int64,Abs
         rlbd[i], rubd[i] = row_bounds_from_moi(cons.set)
     end
     @assert(pos-1==nnz)
-
+    
     # NOTE: DSP takes CSR (row-wise sparse matrix) format.
     # So I simply switch the entries for columns and rows.
     mat = sparse(cind, rind, value, num_cols, num_rows)
@@ -389,7 +408,7 @@ end
 function loadQuadraticConstraints!(model::SJ.StructuredModel)
     
     setQcRowDataDimensions(dspenv)
-
+    
     # set problem data
     for (id, blk) in SJ.getchildren(model)
         nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_qc_data(blk, dspenv.quadConstrs[id])
