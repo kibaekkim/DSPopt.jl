@@ -40,7 +40,7 @@ mutable struct DSPProblem
     comm_size::Int
     comm_rank::Int
 
-    function DSPProblem()
+    function DSPProblem(fake::Bool = false)
         prob = new(
             C_NULL, # p
             Dict(), # numRows
@@ -61,8 +61,10 @@ mutable struct DSPProblem
             1, # comm_size
             0 # comm_rank
         )
-        prob.p = createEnv()
-        finalizer(freeEnv, prob)
+        if !fake
+            prob.p = createEnv()
+            finalizer(freeEnv, prob)
+        end
 
         return prob
     end

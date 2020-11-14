@@ -24,10 +24,15 @@ include("DSPCInterface.jl")
 
 function __init__()
     try
-        Libdl.dlopen("libDsp", Libdl.RTLD_GLOBAL)
-        global dspenv = DSPProblem()
+        if Libdl.find_library("libDsp") == ""
+            @warn("Could not load DSP shared library. Make sure it is in your library path.")
+            global dspenv = DSPProblem(true)
+        else
+            Libdl.dlopen("libDsp", Libdl.RTLD_GLOBAL)
+            global dspenv = DSPProblem(false)
+        end
     catch
-        @warn("Could not load DSP shared library. Make sure it is in your library path.")
+        @warn("Failed to initialize the package.")
         rethrow()
     end
 end
