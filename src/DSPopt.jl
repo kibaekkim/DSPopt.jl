@@ -85,55 +85,62 @@ end
 
 function classifyConstrs(m::SJ.StructuredModel)
     
-    if dspenv.is_quadratic
-        nchildren = length(SJ.getchildren(m))
-        nquadsubs = 0
+    # if dspenv.is_quadratic
+    nchildren = length(SJ.getchildren(m))
+    nquadsubs = 0
+    
+    for (id, blk) in SJ.getchildren(m)
+
+        numQc = 0
+        numLc = 0
         
-        for (id, blk) in SJ.getchildren(m)
-
-            numQc = 0
-            numLc = 0
-            
-            dspenv.quadConstrs[id] = Dict{Int64,AbstractConstraint}()
-            dspenv.linConstrs[id] = Dict{Int64,AbstractConstraint}()
-            quadConstrs_temp = Dict{Int64,AbstractConstraint}()
-            
-            # partition the constraint set into linear constraints and quadratic constraints
-            ## count the number of linear and quadratic constraints and adjust the indices of linear constraints so that its keys = 1:numLc[id]
-            for i = 1:length(blk.constraints)
-                c = blk.constraints[i]
-                if typeof(c.func) <: GenericAffExpr
-                    numLc += 1
-                    dspenv.linConstrs[id][numLc] = c
-                elseif (typeof(c.func) <: GenericQuadExpr)
-                    numQc += 1
-                    quadConstrs_temp[numQc] = c
-                else
-                    @error("Current version accepts constraints that are either quadratic or affine.")
-                end
-            end
-            
-            if numQc > 0
-                nquadsubs += 1
-                # adjust the indices of quadratic constraints so that its keys = numLc+1:nrows_core
-                for i = 1:numQc
-                    dspenv.quadConstrs[id][i + numLc] = quadConstrs_temp[i]
-                end
-
-                blk.constraints = merge(dspenv.linConstrs[id], dspenv.quadConstrs[id])
-                # print(id, " numLc: ", numLc), ", numQc: ", numQc), "\n")
+        dspenv.quadConstrs[id] = Dict{Int64,AbstractConstraint}()
+        dspenv.linConstrs[id] = Dict{Int64,AbstractConstraint}()
+        quadConstrs_temp = Dict{Int64,AbstractConstraint}()
+        
+        # partition the constraint set into linear constraints and quadratic constraints
+        ## count the number of linear and quadratic constraints and adjust the indices of linear constraints so that its keys = 1:numLc[id]
+        for i = 1:length(blk.constraints)
+            c = blk.constraints[i]
+            if typeof(c.func) <: GenericAffExpr
+                numLc += 1
+                dspenv.linConstrs[id][numLc] = c
+            elseif (typeof(c.func) <: GenericQuadExpr)
+                numQc += 1
+                quadConstrs_temp[numQc] = c
+            else
+                @error("Current version accepts constraints that are either quadratic or affine.")
             end
         end
+        
+        if numQc > 0
+            nquadsubs += 1
+            # adjust the indices of quadratic constraints so that its keys = numLc+1:nrows_core
+            for i = 1:numQc
+                dspenv.quadConstrs[id][i + numLc] = quadConstrs_temp[i]
+            end
 
+            blk.constraints = merge(dspenv.linConstrs[id], dspenv.quadConstrs[id])
+            # print(id, " numLc: ", numLc), ", numQc: ", numQc), "\n")
+        end
+    end
+
+    # else 
+    if !dspenv.is_quadratic
+        if nquadsubs > 0
+            @warn("A quadratic constraints is detected. 'is_quadratic' option has turned on")
+            dspenv.is_quadratic = true
+        else
+            for (id, blk) in SJ.getchildren(m)
+                dspenv.linConstrs[id] = blk.constraints;
+            end
+        end
+    else
         if nquadsubs == 0
             @warn("The model does not have any quadratic constraints. 'is_quadratic' option has turned off")
             dspenv.is_quadratic = false
         end
-    else 
-        for (id, blk) in SJ.getchildren(m)
-            dspenv.linConstrs[id] = blk.constraints;
-        end
-    end
+    end 
 end
 
 function get_model_data(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractConstraint})
@@ -156,7 +163,10 @@ function get_model_data(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractCo
         else
             ctype = ctype * "C"
         end
-        if v.info.binary
+        if v.info.has_fix
+            clbd[vref.idx] = v.info.fixed_value
+            cubd[vref.idx] = v.info.fixed_value
+        elseif v.info.binary
             clbd[vref.idx] = 0.0
             cubd[vref.idx] = 1.0
         else

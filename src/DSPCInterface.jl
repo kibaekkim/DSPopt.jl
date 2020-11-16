@@ -157,7 +157,7 @@ loadSecondStage(dsp::DSPProblem, id, probability, start, index, value, clbd, cub
 loadQuadraticRows(dsp::DSPProblem, id, nqrows::Int, linnzcnt::Vector{Int}, quadnzcnt::Vector{Int}, rhs::Vector{Float64}, sense::Vector{Int}, linstart::Vector{Int}, linind::Vector{Int}, linval::Vector{Float64}, quadstart::Vector{Int}, quadrow::Vector{Int}, quadcol::Vector{Int}, quadval::Vector{Float64}) = @dsp_ccall(
     "loadQuadraticRows", Cvoid,
     (Ptr{Cvoid}, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint},Ptr{Cint},Ptr{Cdouble}),
-    dsp.p, id, nqrows, convert(Vector{Cint}, linnzcnt), convert(Vector{Cint}, quadnzcnt), convert(Vector{Cdouble}, rhs), convert(Vector{Cint}, sense), convert(Vector{Cint}, linstart), convert(Vector{Cint}, linind), convert(Vector{Cdouble}, linval), convert(Vector{Cint}, quadstart), convert(Vector{Cint}, quadrow), convert(Vector{Cint}, quadcol), convert(Vector{Cdouble}, quadval))
+    dsp.p, id, nqrows, convert(Vector{Cint}, linnzcnt), convert(Vector{Cint}, quadnzcnt), rhs, convert(Vector{Cint}, sense), convert(Vector{Cint}, linstart), convert(Vector{Cint}, linind), linval, convert(Vector{Cint}, quadstart), convert(Vector{Cint}, quadrow), convert(Vector{Cint}, quadcol), quadval)
 
 loadBlockProblem(dsp::DSPProblem, id, ncols, nrows, numels, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadBlockProblem", Cvoid, (
