@@ -25,15 +25,17 @@ jobs:
           path: libDsp
           ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
           lfs: true
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: ${{ matrix.julia-version }}
       - name: Set path to libDsp
         run: |
           cd libDsp && tar -zxvf DSP.tar.gz && cd ..
           export LD_LIBRARY_PATH=$PWD/libDsp:$PWD/libDsp/lib:$LD_LIBRARY_PATH
           echo $LD_LIBRARY_PATH
-      - uses: julia-actions/setup-julia@latest
-        with:
-          version: ${{ matrix.julia-version }}
-      - run: julia -e '@show ENV["LD_LIBRARY_PATH"]'
+      - run: |
+          pwd
+          julia -e '@show ENV["LD_LIBRARY_PATH"]'
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
