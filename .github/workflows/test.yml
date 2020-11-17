@@ -25,8 +25,9 @@ jobs:
           lfs: true
       - name: Set path to libDsp
         run: |
-          cd libDsp && tar --zxvf DSP.tar.gz && cd ..
+          cd libDsp && tar -zxvf DSP.tar.gz && cd ..
           export LD_LIBRARY_PATH=$PWD/libDsp:$PWD/libDsp/lib:$LD_LIBRARY_PATH
+          echo $LD_LIBRARY_PATH
       - name: Checkout DSPopt.jl
         uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@latest
