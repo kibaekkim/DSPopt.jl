@@ -18,7 +18,7 @@ jobs:
             ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - uses: actions/checkout@v2
         with:
-          path: https://xgitlab.cels.anl.gov/kimk/libdsp.git
+          repository: kibaekkim/libDsp
           lfs: true
 
       # - uses: actions/checkout@v2
