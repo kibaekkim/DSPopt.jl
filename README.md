@@ -46,6 +46,9 @@ for s = 1:3
     @constraint(blk, 6 * y[1] + y[2] + 3 * y[3] + 2 * y[4] <= xi[2,s] - x[2])
 end
 
+# The Wasserstein ambiguity set of order-2 can be imposed with the size limit of 1.0.
+DSPopt.set(WassersteinSet, 2, 1.0)
+
 status = optimize!(m, 
     is_stochastic = true, # Needs to indicate that the model is a stochastic program.
     solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
