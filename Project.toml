@@ -1,7 +1,7 @@
 name = "DSPopt"
 uuid = "cdb1efd8-3f30-48e6-a1f7-a3d77bf376b8"
 authors = ["Kibaek Kim <kimk@anl.gov>"]
-version = "0.1.2"
+version = "0.2.0"
 
 [deps]
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
@@ -15,7 +15,7 @@ StructJuMP = "34f15cae-5318-50c9-93d3-9feadd34e321"
 [compat]
 JuMP = "0.21.5"
 MPI = "0.15.1, 0.16"
-MathOptInterface = "0.9.17"
+MathOptInterface = "0.9.18"
 StructJuMP = "0.2.0"
 julia = "^1.3"
 

@@ -15,7 +15,7 @@ const dsp = DSPopt.dspenv
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.solve_type == DSPopt.Dual
+    @test dsp.solve_type == DSPopt.DW
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
     @test dsp.comm_rank == 0
@@ -47,6 +47,10 @@ end
     include("dcap.jl")
 end
 
+@testset "Distributionally robust extension" begin
+    include("Dro.jl")
+end
+
 @testset "Freeing DSPopt" begin
     DSPopt.freeEnv(dsp)
     @test dsp.p == C_NULL
@@ -59,7 +63,7 @@ end
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.solve_type == DSPopt.Dual
+    @test dsp.solve_type == DSPopt.DW
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
     @test dsp.comm_rank == 0

@@ -3,8 +3,8 @@ module DSPopt
 @enum Methods begin
     ExtensiveForm
     Benders
+    DW
     Dual
-    Legacy
 end
 
 using Libdl
@@ -18,14 +18,21 @@ const MOI = MathOptInterface
 using JuMP # To reexport, should be using (not import)
 @SJ.exportall JuMP
 
+export WassersteinSet
+
 include("DSPCInterface.jl")
 
 function __init__()
     try
-        Libdl.dlopen("libDsp", Libdl.RTLD_GLOBAL)
-        global dspenv = DSPProblem()
+        if Libdl.find_library("libDsp") == ""
+            @warn("Could not load DSP shared library. Make sure it is in your library path.")
+            global dspenv = DSPProblem(true)
+        else
+            Libdl.dlopen("libDsp", Libdl.RTLD_GLOBAL)
+            global dspenv = DSPProblem(false)
+        end
     catch
-        @warn("Could not load DSP shared library. Make sure it is in your library path.")
+        @warn("Failed to initialize the package.")
         rethrow()
     end
 end
@@ -35,6 +42,8 @@ function check_dsp()
         @error("DSP is not initialied.")
     end
 end
+
+include("Dro.jl")
 
 function SJ.optimize!(m::SJ.StructuredModel; options...)
 
@@ -231,6 +240,9 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
         start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
         loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
     end
+
+    # Set DRO data
+    loadDroData(dspenv, dspenv.dro)
 end
 
 function loadStructuredProblem!(model::SJ.StructuredModel)
@@ -273,7 +285,7 @@ end
 
 function solve!()
     if dspenv.comm_size == 1
-        if dspenv.solve_type == Legacy
+        if dspenv.solve_type == Dual
             if dspenv.is_stochastic
                 solveDd(dspenv);
             else
@@ -287,13 +299,13 @@ function solve!()
             end
         elseif dspenv.solve_type == ExtensiveForm
             solveDe(dspenv);
-        elseif dspenv.solve_type == Dual
+        elseif dspenv.solve_type == DW
             solveDw(dspenv);
         else
             @error("Unexpected error")
         end
     elseif dspenv.comm_size > 1
-        if dspenv.solve_type == Legacy
+        if dspenv.solve_type == Dual
             if dspenv.is_stochastic
                 solveDdMpi(dspenv);
             else
@@ -305,7 +317,7 @@ function solve!()
             else
                 @error("This method is available for stochastic programs only.")
             end
-        elseif dspenv.solve_type == Dual
+        elseif dspenv.solve_type == DW
             solveDwMpi(dspenv);
         elseif dspenv.solve_type == ExtensiveForm
             solveDe(dspenv);
@@ -326,7 +338,7 @@ function post_solve!()
     dspenv.primVal = getPrimalBound(dspenv) * dspenv.objective_sense
     dspenv.dualVal = getDualBound(dspenv) * dspenv.objective_sense
 
-    if dspenv.solve_type == Legacy
+    if dspenv.solve_type == Dual
         dspenv.rowVal = getDualSolution(dspenv)
     end
 

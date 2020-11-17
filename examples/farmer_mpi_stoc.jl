@@ -57,7 +57,7 @@ end
 
 status = optimize!(m, 
     is_stochastic = true, # Needs to indicate that the model is of the stochastic program.
-    solve_type = DSPopt.Dual, # see instances(DSPopt.Methods) for other methods
+    solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
     param = "examples/params.txt" # This path assumes running from the one-level upper directory (i.e., ../).
     )
 
@@ -65,7 +65,7 @@ if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
     @show objective_value(m)
     @show dual_objective_value(m)
     @show value.(x)
-    @show dual() # This is available only for solve_type = DSPopt.Legacy.
+    @show dual() # This is available only for solve_type = DSPopt.Dual.
 end
 
 MPI.Finalize()

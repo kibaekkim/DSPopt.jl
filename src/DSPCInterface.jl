@@ -30,6 +30,8 @@ mutable struct DSPProblem
 
     is_stochastic::Bool
 
+    dro
+
     # solve_type should be one of these:
     solve_type::Methods
 
@@ -38,7 +40,7 @@ mutable struct DSPProblem
     comm_size::Int
     comm_rank::Int
 
-    function DSPProblem()
+    function DSPProblem(fake::Bool = false)
         prob = new(
             C_NULL, # p
             Dict(), # numRows
@@ -53,13 +55,16 @@ mutable struct DSPProblem
             -1, # nblocks
             [], # block_ids
             false, # is_stochastic
-            Dual, # solve_type
+            nothing, # dro
+            DW, # solve_type
             nothing, # comm
             1, # comm_size
             0 # comm_rank
         )
-        prob.p = createEnv()
-        finalizer(freeEnv, prob)
+        if !fake
+            prob.p = createEnv()
+            finalizer(freeEnv, prob)
+        end
 
         return prob
     end
@@ -109,7 +114,7 @@ function freeModel(dsp::DSPProblem)
     dsp.nblocks = -1
     dsp.block_ids = []
     dsp.is_stochastic = false
-    dsp.solve_type = Dual
+    dsp.solve_type = DW
 end
 
 ###############################################################################
@@ -135,7 +140,7 @@ loadSecondStage(dsp::DSPProblem, id, probability, start, index, value, clbd, cub
     "loadSecondStage", Cvoid,
     (Ptr{Cvoid}, Cint, Cdouble, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
     dsp.p, id, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
-
+    
 loadBlockProblem(dsp::DSPProblem, id, ncols, nrows, numels, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadBlockProblem", Cvoid, (
     Ptr{Cvoid}, Cint, Cint, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
