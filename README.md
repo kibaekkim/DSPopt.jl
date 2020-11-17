@@ -6,6 +6,12 @@ DSPopt.jl is an interface to a parallel decomposition mixed-integer programming 
 This package allows users to define block structures in optimization model written in [StructJuMP](https://github.com/StructJuMP/StructJuMP.jl) 
 and solve the block-structured problem using the parallle solver ``DSP``.
 
+This package can model and solve (by interfacing `DSP`) the following optimization problems:
+
+- Two-stage stochastic (mixed-integer) linear programming (TSSP)
+- The Wasserstein-based distributionally robust variant of TSSP
+- Block-structured (mixed-integer) linear programming
+
 ## Intallation
 
 > **_NOTE:_** You need to install solver [DSP](https://github.com/Argonne-National-Laboratory/DSP) first. This package provides an interface only.
