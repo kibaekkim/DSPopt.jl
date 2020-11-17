@@ -33,6 +33,7 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.julia-version }}
+      - run: julia -e '@show ENV["LD_LIBRARY_PATH"]'
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
