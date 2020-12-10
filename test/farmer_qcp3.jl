@@ -23,6 +23,8 @@ m = StructuredModel(num_scenarios = NS)
 @variable(m, x[i=CROPS] >= 0, Int)
 @objective(m, Min, sum(Cost[i] * x[i] for i=CROPS))
 @constraint(m, sum(x[i] for i=CROPS) <= Budget)
+# farmer3.txt: quadratic first-stage constraints 
+@constraint(m, 2 * x[2]^2 + x[3]^2 <= 3600)
 
 for s in 1:NS
     blk = StructuredModel(parent = m, id = s, prob = probability[s])
@@ -35,9 +37,10 @@ for s in 1:NS
     @constraint(blk, const_minreq_beets, Yield[s,3] * x[3] - w[3] - w[4] >= Minreq[3])
     @constraint(blk, const_aux, w[3] <= 6000)
 
-    # farmer.txt: quadratic constraints 
+    # farmer3.txt: quadratic second-stage constraints 
     @constraint(blk, const_quad, w[1]^2 <= 1600)
 end
+
 
 @testset "optimize!: $j" for j in [DSPopt.Legacy, DSPopt.ExtensiveForm] #instances(DSPopt.Methods)
     
@@ -45,15 +48,15 @@ end
     
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
     @test DSPopt.termination_status(m) == MOI.OPTIMAL
-    @test isapprox(dual_objective_value(m), -105093.3333333334, rtol=0.1)
+    @test isapprox(dual_objective_value(m), 28546.7, rtol=0.1)
 
     primsol = value()
     dualsol = dual()
     
     print("Optimal objective value: ", objective_value(m), "\n")
-    print("Dual objective value: ", dual_objective_value(m), "\n")
     # print("Optimal primal solution: \n")
     # print(primsol, "\n")
+    
     DSPopt.freeSolver(dsp)
     @testset "freeModel" begin
         DSPopt.freeModel(dsp)
@@ -73,7 +76,7 @@ end
     end
 end
 
-# @testset "writeFile" begin
+# @testset "writeMps" begin
 #     DSPopt.writeMps!(m, "farmer", is_stochastic = true)
 #     @test isfile("farmer.mps")
 # end

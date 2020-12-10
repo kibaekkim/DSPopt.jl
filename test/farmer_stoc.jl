@@ -39,7 +39,7 @@ end
 @testset "Parent model" begin
     @test length(m.variables) == 3
     @test length(m.constraints) == 1
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m, m.constraints)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m)
     @test length(start) == length(m.constraints) + 1
     @test start[end] == length(index)
     @test start == [0, 3]
@@ -58,7 +58,7 @@ end
     @test m.probability[i] == probability[i]
     @test length(subm.variables) == 6
     @test length(subm.constraints) == 4
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm, subm.constraints)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm)
     @test length(start) == length(subm.constraints) + 1
     @test start[end] == length(index)
     @test start == [0, 3, 6, 9, 10]
@@ -72,7 +72,7 @@ end
     @test ctype == "CCCCCC"
 end
 
-@testset "optimize!: $j" for j in [DSPopt.Legacy, DSPopt.ExtensiveForm]#instances(DSPopt.Methods)
+@testset "optimize!: $j" for j in instances(DSPopt.Methods)
     dsp.is_stochastic = true
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
     @test DSPopt.termination_status(m) == MOI.OPTIMAL
