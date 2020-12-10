@@ -15,7 +15,6 @@ const dsp = DSPopt.dspenv
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.is_quadratic == false
     @test dsp.solve_type == DSPopt.Dual
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
@@ -30,22 +29,10 @@ end
         DSPopt.setoptions!(Dict(:is_stochastic => i))
         @test dsp.is_stochastic == i
     end
-    @testset "is_quadratic: $i" for i in [true, false]
-        DSPopt.setoptions!(Dict(:is_quadratic => i))
-        @test dsp.is_quadratic == i
-    end
     @testset "solve_type: $t" for t in instances(DSPopt.Methods)
         DSPopt.setoptions!(Dict(:solve_type => t))
         @test dsp.solve_type == t
     end
-end
-
-@testset "Farmer example: stochastic quadratic form" begin
-    include("farmer_qcp.jl")
-end
-
-@testset "Farmer example2: stochastic quadratic form" begin
-    include("farmer_qcp2.jl")
 end
 
 @testset "Farmer example: stochastic form" begin
@@ -60,6 +47,18 @@ end
     include("dcap.jl")
 end
 
+@testset "Farmer example: stochastic quadratic form" begin
+    include("farmer_qcp.jl")
+end
+
+@testset "Farmer example2: stochastic quadratic form" begin
+    include("farmer_qcp2.jl")
+end
+
+@testset "Farmer example3: stochastic quadratic form" begin
+    include("farmer_qcp3.jl")
+end
+
 @testset "Freeing DSPopt" begin
     DSPopt.freeEnv(dsp)
     @test dsp.p == C_NULL
@@ -72,7 +71,6 @@ end
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.is_quadratic == false
     @test dsp.solve_type == DSPopt.Dual
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1

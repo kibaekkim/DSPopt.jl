@@ -47,9 +47,6 @@ function SJ.optimize!(m::SJ.StructuredModel; options...)
     # classify the second stage constraints into linear ones and quadratic ones
     classifyConstrs(m)
 
-    # create a model
-    createModel!(dspenv)
-
     # load problem
     load_problem!(m)
     
@@ -71,9 +68,6 @@ function writeMps!(m::SJ.StructuredModel, filename::AbstractString; options...)
     # classify the second stage constraints into linear ones and quadratic ones
     classifyConstrs(m)
 
-    # create a model
-    createModel!(dspenv)
-
     # load problem
     load_problem!(m)
 
@@ -85,12 +79,50 @@ end
 
 function classifyConstrs(m::SJ.StructuredModel)
     
-    # if dspenv.is_quadratic
     nchildren = length(SJ.getchildren(m))
-    nquadsubs = 0
+    dspenv.is_qc = Dict{Int64,Bool}()
     
+    # first-stage quadratic constraints
+    dspenv.is_qc[0] = false
+
+    numQc = 0
+    numLc = 0
+
+    dspenv.quadConstrs[0] = Dict{Int64,AbstractConstraint}()
+    dspenv.linConstrs[0] = Dict{Int64,AbstractConstraint}()
+    quadConstrs_temp = Dict{Int64,AbstractConstraint}()
+        
+    # partition the constraint set into linear constraints and quadratic constraints
+    ## count the number of linear and quadratic constraints and adjust the indices of linear constraints so that its keys = 1:numLc[id]
+    for i = 1:length(m.constraints)
+        c = m.constraints[i]
+        if typeof(c.func) <: GenericAffExpr
+            numLc += 1
+            dspenv.linConstrs[0][numLc] = c
+        elseif (typeof(c.func) <: GenericQuadExpr)
+            numQc += 1
+            quadConstrs_temp[numQc] = c
+        else
+            @error("Current version accepts constraints that are either quadratic or affine.")
+        end
+    end
+        
+    if numQc > 0
+        dspenv.is_qc[0] = true
+        # adjust the indices of quadratic constraints so that its keys = numLc+1:nrows_core
+        for i = 1:numQc
+            dspenv.quadConstrs[0][i + numLc] = quadConstrs_temp[i]
+        end
+
+        m.constraints = merge(dspenv.linConstrs[0], dspenv.quadConstrs[0])
+        print("Core numLc: ", numLc, ", numQc: ", numQc, "\n")
+    end
+
+    # second-stage quadratic quadratic constraints
     for (id, blk) in SJ.getchildren(m)
 
+        dspenv.is_qc[id] = false
+        
         numQc = 0
         numLc = 0
         
@@ -114,36 +146,68 @@ function classifyConstrs(m::SJ.StructuredModel)
         end
         
         if numQc > 0
-            nquadsubs += 1
+            dspenv.is_qc[id] = true
             # adjust the indices of quadratic constraints so that its keys = numLc+1:nrows_core
             for i = 1:numQc
                 dspenv.quadConstrs[id][i + numLc] = quadConstrs_temp[i]
             end
 
             blk.constraints = merge(dspenv.linConstrs[id], dspenv.quadConstrs[id])
-            # print(id, " numLc: ", numLc), ", numQc: ", numQc), "\n")
+            # print("Scen ", id, " numLc: ", numLc, ", numQc: ", numQc, "\n")
+        end
+    end
+end
+
+function get_model_data(m::SJ.StructuredModel)
+
+    # Get a column-wise sparse matrix
+    start, index, value, rlbd, rubd = get_constraint_matrix(m, m.constraints)
+
+    # column information
+    clbd = Vector{Float64}(undef, num_variables(m))
+    cubd = Vector{Float64}(undef, num_variables(m))
+    ctype = ""
+    cname = Vector{String}(undef, num_variables(m))
+    for i in 1:num_variables(m)
+        vref = SJ.StructuredVariableRef(m, i)
+        v = m.variables[vref.idx]
+        if v.info.integer
+            ctype = ctype * "I"
+        elseif v.info.binary
+            ctype = ctype * "B"
+        else
+            ctype = ctype * "C"
+        end
+        if v.info.has_fix
+            clbd[vref.idx] = v.info.fixed_value
+            cubd[vref.idx] = v.info.fixed_value
+        elseif v.info.binary
+            clbd[vref.idx] = 0.0
+            cubd[vref.idx] = 1.0
+        else
+            clbd[vref.idx] = v.info.has_lb ? v.info.lower_bound : -Inf
+            cubd[vref.idx] = v.info.has_ub ? v.info.upper_bound : Inf
+        end
+        cname[vref.idx] = m.varnames[vref.idx]
+    end
+
+    # objective coefficients
+    obj = zeros(num_variables(m))
+    if !(objective_function_type(m) <: Real)
+        for (v,coef) in objective_function(m).terms
+            obj[v.idx] = coef
         end
     end
 
-    # else 
-    if !dspenv.is_quadratic
-        if nquadsubs > 0
-            @warn("A quadratic constraints is detected. 'is_quadratic' option has turned on")
-            dspenv.is_quadratic = true
-        else
-            for (id, blk) in SJ.getchildren(m)
-                dspenv.linConstrs[id] = blk.constraints;
-            end
-        end
-    else
-        if nquadsubs == 0
-            @warn("The model does not have any quadratic constraints. 'is_quadratic' option has turned off")
-            dspenv.is_quadratic = false
-        end
-    end 
+    if objective_sense(m) == MOI.MAX_SENSE
+        dspenv.objective_sense = -1.
+        obj .*= -1
+    end
+
+    return start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname
 end
 
-function get_model_data(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractConstraint})
+function get_model_data(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractConstraint}, quadConstrs::Dict{Int64,AbstractConstraint})
 
     # Get a column-wise sparse matrix
     start, index, value, rlbd, rubd = get_constraint_matrix(m, linConstrs)
@@ -189,7 +253,9 @@ function get_model_data(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractCo
         obj .*= -1
     end
 
-    return start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname
+    # get quadratic constraints data
+    nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_qc_data(m, quadConstrs)
+    return start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval
 end
 
 function get_constraint_matrix(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractConstraint})
@@ -256,10 +322,7 @@ row_bounds_from_moi(set::MOI.Interval) = @error("Interval row bounds are not sup
 function get_qc_data(m::SJ.StructuredModel, quadConstrs::Dict{Int64,AbstractConstraint})
     
     is_parent = SJ.getparent(m) == nothing ? true : false
-    if is_parent 
-        @error("First stage quadratic constraints are not supported")
-    end
-    
+
     nqrows = length(quadConstrs)
     
     linnzcnt = Vector{Int}(undef, nqrows)
@@ -344,10 +407,14 @@ function get_qc_data(m::SJ.StructuredModel, quadConstrs::Dict{Int64,AbstractCons
     for (key,con) in quadConstrs
         # affine terms
         for (var,coef) in con.func.aff.terms
-            if JuMP.owner_model(var) == SJ.getparent(m)
+            if is_parent
                 linind[linpos] = var.idx - 1
             else 
-                linind[linpos] = var.idx - 1 + num_variables(SJ.getparent(m))
+                if JuMP.owner_model(var) == SJ.getparent(m)
+                    linind[linpos] = var.idx - 1
+                else 
+                    linind[linpos] = var.idx - 1 + num_variables(SJ.getparent(m))
+                end
             end
             linval[linpos] = coef
             linpos += 1
@@ -355,15 +422,20 @@ function get_qc_data(m::SJ.StructuredModel, quadConstrs::Dict{Int64,AbstractCons
         end
         # quad terms
         for (var,coef) in con.func.terms
-            if JuMP.owner_model(var.a) == SJ.getparent(m)
+            if is_parent
                 quadrow[quadpos] = var.a.idx - 1 
-            else 
-                quadrow[quadpos] = var.a.idx - 1 + num_variables(SJ.getparent(m))
-            end
-            if JuMP.owner_model(var.b) == SJ.getparent(m)
                 quadcol[quadpos] = var.b.idx - 1 
             else 
-                quadcol[quadpos] = var.b.idx - 1 + num_variables(SJ.getparent(m))
+                if JuMP.owner_model(var.a) == SJ.getparent(m)
+                    quadrow[quadpos] = var.a.idx - 1 
+                else 
+                    quadrow[quadpos] = var.a.idx - 1 + num_variables(SJ.getparent(m))
+                end
+                if JuMP.owner_model(var.b) == SJ.getparent(m)
+                    quadcol[quadpos] = var.b.idx - 1 
+                else 
+                    quadcol[quadpos] = var.b.idx - 1 + num_variables(SJ.getparent(m))
+                end
             end
             quadval[quadpos] = coef
             quadpos += 1
@@ -386,8 +458,6 @@ function setoptions!(options)
             readParamFile(dspenv, optval)
         elseif optname == :is_stochastic
             dspenv.is_stochastic = optval
-        elseif optname == :is_quadratic
-            dspenv.is_quadratic = optval
         elseif optname == :solve_type
             if optval in instances(Methods)
                 dspenv.solve_type = optval
@@ -408,31 +478,14 @@ function load_problem!(m::SJ.StructuredModel)
         loadStructuredProblem!(m)
     end
 
-    if dspenv.is_quadratic
-        loadQuadraticConstraints!(m)
-    end
-
     setBlocks()
-end
-
-function loadQuadraticConstraints!(model::SJ.StructuredModel)
-    
-    setQcRowDataDimensions(dspenv)
-    
-    # set problem data
-    for (id, blk) in SJ.getchildren(model)
-        nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_qc_data(blk, dspenv.quadConstrs[id])
-
-        setQcDimensions(dspenv, id-1, nqrows)
-        loadQuadraticRows(dspenv, id-1, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
-    end
 end
 
 function loadStochasticProblem!(model::SJ.StructuredModel)
 
     nscen = SJ.num_scenarios(model)
     ncols1 = length(model.variables)
-    nrows1 = length(model.constraints)
+    nrows1 = length(dspenv.linConstrs[0])
     ncols2 = 0
     nrows2 = 0
     for (id, subm) in SJ.getchildren(model)
@@ -461,13 +514,23 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
     setDimensions(dspenv, ncols1, nrows1, ncols2, nrows2)
 
     # set problem data
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(model, model.constraints)
-    loadFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
-
+    if length(dspenv.quadConstrs[0]) == 0
+        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(model)
+        loadFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+    else
+        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(model, dspenv.linConstrs[0], dspenv.quadConstrs[0])
+        loadQCQPFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+    end
+    
     for (id, blk) in SJ.getchildren(model)
         probability = SJ.getprobability(model)[id]
-        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk, dspenv.linConstrs[id])
-        loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+        if length(dspenv.quadConstrs[id]) == 0
+            start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
+            loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+        else
+            start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(blk, dspenv.linConstrs[id], dspenv.quadConstrs[id])
+            loadQCQPSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+        end
     end
 end
 
@@ -491,7 +554,7 @@ function loadStructuredProblem!(model::SJ.StructuredModel)
     # TODO: do something for MPI
     
     # load master
-    start, index, value, rlbd, rubd, obj1, clbd1, cubd1, ctype1, cname = get_model_data(model, model.constraints)
+    start, index, value, rlbd, rubd, obj1, clbd1, cubd1, ctype1, cname = get_model_data(model)
     loadBlockProblem(dspenv, 0, ncols1, nrows1, start[end],
         start, index, value, clbd1, cubd1, ctype1, obj1, rlbd, rubd)
 
@@ -500,7 +563,7 @@ function loadStructuredProblem!(model::SJ.StructuredModel)
         probability = SJ.getprobability(model)[id]
         ncols2 = length(blk.variables)
         nrows2 = length(dspenv.linConstrs[id])
-        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk, dspenv.linConstrs[id])
+        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
         loadBlockProblem(dspenv, id, ncols1 + ncols2, nrows2, start[end], 
             start, index, value, [clbd1; clbd], [cubd1; cubd], [ctype1; ctype], [obj1; obj], rlbd, rubd)
     end

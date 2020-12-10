@@ -29,7 +29,6 @@ mutable struct DSPProblem
     block_ids::Vector{Integer}
 
     is_stochastic::Bool
-    is_quadratic::Bool
 
     # solve_type should be one of these:
     solve_type::Methods
@@ -40,6 +39,7 @@ mutable struct DSPProblem
     comm_rank::Int
 
     # linear and quadratic constraints of subproblems
+    is_qc::Dict{Int64,Bool}
     quadConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}}
     linConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}}
 
@@ -58,11 +58,11 @@ mutable struct DSPProblem
             -1, # nblocks
             [], # block_ids
             false, # is_stochastic
-            false, # is_quadratic
             Dual, # solve_type
             nothing, # comm
             1, # comm_size
             0, # comm_rank
+            Dict(), # is_qc
             Dict(), # quadratic constraints
             Dict() # linear constraints
         )
@@ -117,17 +117,10 @@ function freeModel(dsp::DSPProblem)
     dsp.nblocks = -1
     dsp.block_ids = []
     dsp.is_stochastic = false
-    dsp.is_quadratic = false
     dsp.solve_type = Dual
+    dsp.is_qc = Dict()
     dsp.quadConstrs = Dict()
     dsp.linConstrs = Dict()
-end
-
-###############################################################################
-# Create a model
-###############################################################################
-function createModel!(dsp::DSPProblem)
-    @dsp_ccall("createModel", Cint, (Ptr{Cvoid}, Cint, Cint), dsp.p, dsp.is_stochastic, dsp.is_quadratic)
 end
 
 ###############################################################################
@@ -149,15 +142,20 @@ loadFirstStage(dsp::DSPProblem, start, index, value, clbd, cubd, ctype, obj, rlb
     (Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
     dsp.p, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
 
+loadQCQPFirstStage(dsp::DSPProblem, start, index, value, clbd, cubd, ctype, obj, qobjrowindex, qobjcolindex, qobjvalue, qobjnum, rlbd, rubd, nqrows::Int, linnzcnt::Vector{Int}, quadnzcnt::Vector{Int}, rhs::Vector{Float64}, sense::Vector{Int}, linstart::Vector{Int}, linind::Vector{Int}, linval::Vector{Float64}, quadstart::Vector{Int}, quadrow::Vector{Int}, quadcol::Vector{Int}, quadval::Vector{Float64}) = @dsp_ccall(
+    "loadQCQPFirstStage", Cvoid,
+    (Ptr{Cvoid}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint},Ptr{Cint},Ptr{Cdouble}),
+    dsp.p, start, index, value, clbd, cubd, ctype, obj, qobjrowindex, qobjcolindex, qobjvalue, qobjnum, rlbd, rubd, nqrows, convert(Vector{Cint}, linnzcnt), convert(Vector{Cint}, quadnzcnt), rhs, convert(Vector{Cint}, sense), convert(Vector{Cint}, linstart), convert(Vector{Cint}, linind), linval, convert(Vector{Cint}, quadstart), convert(Vector{Cint}, quadrow), convert(Vector{Cint}, quadcol), quadval)
+
 loadSecondStage(dsp::DSPProblem, id, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadSecondStage", Cvoid,
     (Ptr{Cvoid}, Cint, Cdouble, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}),
     dsp.p, id, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
 
-loadQuadraticRows(dsp::DSPProblem, id, nqrows::Int, linnzcnt::Vector{Int}, quadnzcnt::Vector{Int}, rhs::Vector{Float64}, sense::Vector{Int}, linstart::Vector{Int}, linind::Vector{Int}, linval::Vector{Float64}, quadstart::Vector{Int}, quadrow::Vector{Int}, quadcol::Vector{Int}, quadval::Vector{Float64}) = @dsp_ccall(
-    "loadQuadraticRows", Cvoid,
-    (Ptr{Cvoid}, Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint},Ptr{Cint},Ptr{Cdouble}),
-    dsp.p, id, nqrows, convert(Vector{Cint}, linnzcnt), convert(Vector{Cint}, quadnzcnt), rhs, convert(Vector{Cint}, sense), convert(Vector{Cint}, linstart), convert(Vector{Cint}, linind), linval, convert(Vector{Cint}, quadstart), convert(Vector{Cint}, quadrow), convert(Vector{Cint}, quadcol), quadval)
+loadQCQPSecondStage(dsp::DSPProblem, id, probability, start, index, value, clbd, cubd, ctype, obj, qobjrowindex, qobjcolindex, qobjvalue, qobjnum, rlbd, rubd, nqrows::Int, linnzcnt::Vector{Int}, quadnzcnt::Vector{Int}, rhs::Vector{Float64}, sense::Vector{Int}, linstart::Vector{Int}, linind::Vector{Int}, linval::Vector{Float64}, quadstart::Vector{Int}, quadrow::Vector{Int}, quadcol::Vector{Int}, quadval::Vector{Float64}) = @dsp_ccall(
+    "loadQCQPSecondStage", Cvoid,
+    (Ptr{Cvoid}, Cint, Cdouble, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint},Ptr{Cint},Ptr{Cdouble}),
+    dsp.p, id, probability, start, index, value, clbd, cubd, ctype, obj, qobjrowindex, qobjcolindex, qobjvalue, qobjnum, rlbd, rubd, nqrows, convert(Vector{Cint}, linnzcnt), convert(Vector{Cint}, quadnzcnt), rhs, convert(Vector{Cint}, sense), convert(Vector{Cint}, linstart), convert(Vector{Cint}, linind), linval, convert(Vector{Cint}, quadstart), convert(Vector{Cint}, quadrow), convert(Vector{Cint}, quadcol), quadval)
 
 loadBlockProblem(dsp::DSPProblem, id, ncols, nrows, numels, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd) = @dsp_ccall(
     "loadBlockProblem", Cvoid, (
@@ -255,15 +253,6 @@ setDimensions(dsp::DSPProblem, ncols1::Int, nrows1::Int, ncols2::Int, nrows2::In
     "setDimensions", Cvoid,
     (Ptr{Cvoid}, Cint, Cint, Cint, Cint),
     dsp.p, convert(Cint, ncols1), convert(Cint, nrows1), convert(Cint, ncols2), convert(Cint, nrows2))
-
-setQcRowDataDimensions(dsp::DSPProblem) = @dsp_ccall(
-        "setQcRowDataDimensions", Cvoid,
-        (Ptr{Cvoid},), dsp.p)
-
-setQcDimensions(dsp::DSPProblem, id::Int, nqrows::Int) = @dsp_ccall(
-        "setQcDimensions", Cvoid,
-        (Ptr{Cvoid}, Cint, Cint),
-        dsp.p, id, nqrows)
     
 setIntPtrParam(dsp::DSPProblem, name::String, n::Int, v::Vector{Int}) = @dsp_ccall(
     "setIntPtrParam", Cvoid, 
