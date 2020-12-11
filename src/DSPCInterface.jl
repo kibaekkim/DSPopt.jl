@@ -197,7 +197,10 @@ for (func,rtn) in [(:getNumScenarios, Cint),
                    (:getWallTime, Cdouble), 
                    (:getPrimalBound, Cdouble), 
                    (:getDualBound, Cdouble),
-                   (:getNumCouplingRows, Cint)]
+                   (:getNumCouplingRows, Cint),
+                   (:getVersionMajor, Cint),
+                   (:getVersionMinor, Cint),
+                   (:getVersionPatch, Cint)]
     strfunc = string(func)
     @eval begin
         function $func(dsp::DSPProblem)
@@ -224,6 +227,13 @@ function getDualSolution(dsp::DSPProblem, num::Integer)
     return sol
 end
 getDualSolution(dsp::DSPProblem) = getDualSolution(dsp, getNumCouplingRows(dsp))
+
+function getVersion(dsp::DSPProblem)
+    major = getVersionMajor(dsp)
+    minor = getVersionMinor(dsp)
+    patch = getVersionPatch(dsp)
+    return "$(major).$(minor).$(patch)"
+end
 
 ###############################################################################
 # Set functions
