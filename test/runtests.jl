@@ -21,6 +21,24 @@ const dsp = DSPopt.dspenv
     @test dsp.comm_rank == 0
 end
 
+@testset "Check DSP versions" begin
+    major = DSPopt.getVersionMajor(dsp)
+    minor = DSPopt.getVersionMinor(dsp)
+    patch = DSPopt.getVersionPatch(dsp)
+    if major > 1
+        @test true
+    elseif major == 1
+        if minor > 4 || (minor == 4 && patch >= 1)
+            @test true
+        else
+            @test false
+        end
+    else
+        @test false
+    end
+    @test DSPopt.getVersion(dsp) == "$(major).$(minor).$(patch)"
+end
+
 @testset "Setting options" begin
     @testset "param:" begin
         DSPopt.setoptions!(Dict(:param => "params.txt"))
