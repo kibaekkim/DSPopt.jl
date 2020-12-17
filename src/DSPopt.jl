@@ -759,6 +759,8 @@ function JuMP.termination_status(m::StructuredModel)
     status = MOI.OPTIMIZE_NOT_CALLED
     if dspenv.status == 3000
         status = MOI.OPTIMAL
+    elseif dspenv.status == 3005
+        status = MOI.ALMOST_OPTIMAL
     elseif dspenv.status == 3001
         status = MOI.INFEASIBLE
     elseif dspenv.status == 3002
@@ -767,7 +769,7 @@ function JuMP.termination_status(m::StructuredModel)
         status = MOI.TIME_LIMIT
     elseif dspenv.status == 3010
         status = MOI.ITERATION_LIMIT
-    elseif dspenv.status in [3005,3014,3015]
+    elseif dspenv.status in [3014,3015]
         status = MOI.OBJECTIVE_LIMIT
     elseif dspenv.status == 3006
         status = MOI.NODE_LIMIT
