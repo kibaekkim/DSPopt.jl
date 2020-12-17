@@ -42,7 +42,7 @@ for s in 1:NS
 end
 
 
-@testset "optimize!: $j" for j in [DSPopt.Legacy, DSPopt.ExtensiveForm] #instances(DSPopt.Methods)
+@testset "optimize!: $j" for j in [DSPopt.Dual, DSPopt.ExtensiveForm] #instances(DSPopt.Methods)
     
     dsp.is_stochastic = true
     
