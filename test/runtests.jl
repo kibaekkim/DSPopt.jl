@@ -65,17 +65,20 @@ end
     include("dcap.jl")
 end
 
-@testset "Farmer example: stochastic quadratic form" begin
-    include("farmer_qcp.jl")
+if DSPopt.getVersionMajor(dsp) >= 2
+    @testset "Farmer example: stochastic quadratic form" begin
+        include("farmer_qcp.jl")
+    end
+
+    @testset "Farmer example2: stochastic quadratic form" begin
+        include("farmer_qcp2.jl")
+    end
+
+    @testset "Farmer example3: stochastic quadratic form" begin
+        include("farmer_qcp3.jl")
+    end
 end
 
-@testset "Farmer example2: stochastic quadratic form" begin
-    include("farmer_qcp2.jl")
-end
-
-@testset "Farmer example3: stochastic quadratic form" begin
-    include("farmer_qcp3.jl")
-    
 @testset "Distributionally robust extension" begin
     include("Dro.jl")
 end
