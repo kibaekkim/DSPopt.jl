@@ -59,5 +59,5 @@ if status == MOI.OPTIMAL
     @show objective_value(m)
     @show dual_objective_value(m)
     @show value.(x)
-    @show dual() # This is available only for solve_type = DSPopt.Legacy.
+    @show dual() # This is available only for solve_type = DSPopt.Dual.
 end

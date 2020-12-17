@@ -30,6 +30,8 @@ mutable struct DSPProblem
 
     is_stochastic::Bool
 
+    dro
+
     # solve_type should be one of these:
     solve_type::Methods
 
@@ -43,7 +45,7 @@ mutable struct DSPProblem
     quadConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}}
     linConstrs::Dict{Int64, Dict{Int64,AbstractConstraint}}
 
-    function DSPProblem()
+    function DSPProblem(fake::Bool = false)
         prob = new(
             C_NULL, # p
             Dict(), # numRows
@@ -58,7 +60,8 @@ mutable struct DSPProblem
             -1, # nblocks
             [], # block_ids
             false, # is_stochastic
-            Dual, # solve_type
+            nothing, # dro
+            DW, # solve_type
             nothing, # comm
             1, # comm_size
             0, # comm_rank
@@ -66,8 +69,10 @@ mutable struct DSPProblem
             Dict(), # quadratic constraints
             Dict() # linear constraints
         )
-        prob.p = createEnv()
-        finalizer(freeEnv, prob)
+        if !fake
+            prob.p = createEnv()
+            finalizer(freeEnv, prob)
+        end
 
         return prob
     end
@@ -212,7 +217,10 @@ for (func,rtn) in [(:getNumScenarios, Cint),
                    (:getWallTime, Cdouble), 
                    (:getPrimalBound, Cdouble), 
                    (:getDualBound, Cdouble),
-                   (:getNumCouplingRows, Cint)]
+                   (:getNumCouplingRows, Cint),
+                   (:getVersionMajor, Cint),
+                   (:getVersionMinor, Cint),
+                   (:getVersionPatch, Cint)]
     strfunc = string(func)
     @eval begin
         function $func(dsp::DSPProblem)
@@ -239,6 +247,13 @@ function getDualSolution(dsp::DSPProblem, num::Integer)
     return sol
 end
 getDualSolution(dsp::DSPProblem) = getDualSolution(dsp, getNumCouplingRows(dsp))
+
+function getVersion(dsp::DSPProblem)
+    major = getVersionMajor(dsp)
+    minor = getVersionMinor(dsp)
+    patch = getVersionPatch(dsp)
+    return "$(major).$(minor).$(patch)"
+end
 
 ###############################################################################
 # Set functions
