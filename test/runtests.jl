@@ -15,10 +15,28 @@ const dsp = DSPopt.dspenv
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.solve_type == DSPopt.Dual
+    @test dsp.solve_type == DSPopt.DW
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
     @test dsp.comm_rank == 0
+end
+
+@testset "Check DSP versions" begin
+    major = DSPopt.getVersionMajor(dsp)
+    minor = DSPopt.getVersionMinor(dsp)
+    patch = DSPopt.getVersionPatch(dsp)
+    if major > 1
+        @test true
+    elseif major == 1
+        if minor > 4 || (minor == 4 && patch >= 1)
+            @test true
+        else
+            @test false
+        end
+    else
+        @test false
+    end
+    @test DSPopt.getVersion(dsp) == "$(major).$(minor).$(patch)"
 end
 
 @testset "Setting options" begin
@@ -47,16 +65,22 @@ end
     include("dcap.jl")
 end
 
-@testset "Farmer example: stochastic quadratic form" begin
-    include("farmer_qcp.jl")
+if DSPopt.getVersionMajor(dsp) >= 2
+    @testset "Farmer example: stochastic quadratic form" begin
+        include("farmer_qcp.jl")
+    end
+
+    @testset "Farmer example2: stochastic quadratic form" begin
+        include("farmer_qcp2.jl")
+    end
+
+    @testset "Farmer example3: stochastic quadratic form" begin
+        include("farmer_qcp3.jl")
+    end
 end
 
-@testset "Farmer example2: stochastic quadratic form" begin
-    include("farmer_qcp2.jl")
-end
-
-@testset "Farmer example3: stochastic quadratic form" begin
-    include("farmer_qcp3.jl")
+@testset "Distributionally robust extension" begin
+    include("Dro.jl")
 end
 
 @testset "Freeing DSPopt" begin

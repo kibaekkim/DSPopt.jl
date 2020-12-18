@@ -42,12 +42,12 @@ for s in 1:NS
 end
 
 
-@testset "optimize!: $j" for j in [DSPopt.Legacy, DSPopt.ExtensiveForm] #instances(DSPopt.Methods)
+@testset "optimize!: $j" for j in [DSPopt.Dual, DSPopt.ExtensiveForm] #instances(DSPopt.Methods)
     
     dsp.is_stochastic = true
     
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
-    @test DSPopt.termination_status(m) == MOI.OPTIMAL
+    @test DSPopt.termination_status(m) in [MOI.OPTIMAL, MOI.ALMOST_OPTIMAL]
     @test isapprox(dual_objective_value(m), 28546.7, rtol=0.1)
 
     primsol = value()
