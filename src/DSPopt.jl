@@ -170,6 +170,16 @@ row_bounds_from_moi(set::MOI.GreaterThan) = (set.lower, Inf)
 row_bounds_from_moi(set::MOI.EqualTo) = (set.value, set.value)
 row_bounds_from_moi(set::MOI.Interval) = @error("Interval row bounds are not supported.")
 
+"""
+    setoptions!
+
+This takes `options` arguments for setting DSP options.
+
+# Arguments
+- `options`: possible keys are `:param` (path to parameter file), 
+    `:is_stochastic` (`true` if stochastic model; otherwise, `false`), 
+    and `:solve_type` (algorithm type; see `Methods`).
+"""
 function setoptions!(options)
     check_dsp()
     for (optname, optval) in options
@@ -189,8 +199,15 @@ function setoptions!(options)
     end
 end
 
+"""
+    load_problem!
+
+Load problem from StructJuMP
+
+# Arguments
+- `m`: StructJuMP model
+"""
 function load_problem!(m::SJ.StructuredModel)
-    # load problem from StructJuMP
     if dspenv.is_stochastic
         loadStochasticProblem!(m)
     else
@@ -199,6 +216,14 @@ function load_problem!(m::SJ.StructuredModel)
     setBlocks()
 end
 
+"""
+    loadStochasticProblem!
+
+Load stochastic programming problem from StructJuMP
+
+# Arguments
+- `model`: StructJuMP model
+"""
 function loadStochasticProblem!(model::SJ.StructuredModel)
 
     nscen = SJ.num_scenarios(model)
@@ -245,6 +270,14 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
     loadDroData(dspenv, dspenv.dro)
 end
 
+"""
+    loadStructuredProblem!
+
+Load generic block-structured problem from StructJuMP
+
+# Arguments
+- `model`: StructJuMP model
+"""
 function loadStructuredProblem!(model::SJ.StructuredModel)
 
     ncols1 = length(model.variables)
@@ -361,7 +394,13 @@ function post_solve!()
 end
 
 """
+    getBlockIds
+
 Get the vector of block IDs that are assigned to the current MPI rank
+
+# Arguments
+- `nblocks`: number of blocks (by default, `DSPProblem.nblocks`)
+- `master_has_subblocks`: indicate whether the master process solves (scenario) blocks or not (should always be `true`?)
 """
 function getBlockIds(nblocks::Int = dspenv.nblocks, master_has_subblocks::Bool = true)::Vector{Int}
     # processor info
@@ -398,6 +437,8 @@ function getBlockIds(nblocks::Int = dspenv.nblocks, master_has_subblocks::Bool =
 end
 
 """
+    getNumBlockCols
+
 Get the number of columns for each block
 """
 function getNumBlockCols()::Dict{Int,Int}
@@ -425,6 +466,11 @@ function getNumBlockCols()::Dict{Int,Int}
     return numBlockCols
 end
 
+"""
+    setBlocks
+
+The function sets the number of blocks (e.g., scenarios for stochastic program) and their Ids.
+"""
 function setBlocks()
     dspenv.nblocks = getNumSubproblems(dspenv)
     dspenv.block_ids = getBlockIds()
