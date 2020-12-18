@@ -165,6 +165,15 @@ loadBlockProblem(dsp::DSPProblem, id, ncols, nrows, numels, start, index, value,
 updateBlocks(dsp::DSPProblem) = @dsp_ccall("updateBlocks", Cvoid, (Ptr{Cvoid},), dsp.p)
 
 ###############################################################################
+# dro related functions
+###############################################################################
+
+setWassersteinAmbiguitySet(dsp::DSPProblem, lp_norm, eps) = @dsp_ccall(
+    "setWassersteinAmbiguitySet", Cvoid, 
+    (Ptr{Cvoid}, Cdouble, Cdouble), 
+    dsp.p, lp_norm, eps)
+
+###############################################################################
 # solve functions
 ###############################################################################
 
