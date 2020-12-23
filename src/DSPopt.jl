@@ -605,7 +605,6 @@ function loadStructuredProblem!(model::SJ.StructuredModel)
 
     # going over blocks
     for (id, blk) in SJ.getchildren(model)
-        probability = SJ.getprobability(model)[id]
         ncols2 = length(blk.variables)
         nrows2 = length(dspenv.linConstrs[id])
         start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
