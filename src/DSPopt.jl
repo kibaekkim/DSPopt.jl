@@ -507,12 +507,19 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
     setNumberOfScenarios(dspenv, nscen)
     setDimensions(dspenv, ncols1, nrows1, ncols2, nrows2)
 
+    qc_supported = true
+
     # set problem data
     start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(model)
     if nqrows == 0
         loadFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
     else
-        loadQCQPFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+        if getVersionMajor(dspenv) >= 2
+            loadQCQPFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+        else
+            loadFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+            qc_supported = false
+        end
     end
     
     for (id, blk) in SJ.getchildren(model)
@@ -521,8 +528,17 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
         if nqrows == 0
             loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
         else
-            loadQCQPSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+            if getVersionMajor(dspenv) >= 2
+                loadQCQPSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+            else
+                loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+                qc_supported = false
+            end
         end
+    end
+
+    if qc_supported == false
+        @warn "QCQP is not supported with DSP version $(getVersion(dspenv)). The unsupported objective/constraints are ignored."
     end
 
     # Set DRO data
