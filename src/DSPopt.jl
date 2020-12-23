@@ -675,7 +675,11 @@ function post_solve!()
         dspenv.rowVal = getDualSolution(dspenv)
     end
 
-    if abs(dspenv.primVal) < 1.0e+20
+    if mysize() > 1
+        primVal = MPI.bcast(dspenv.primVal, 0, dspenv.comm)
+    end
+
+    if abs(primVal) < 1.0e+20
         primsol = getSolution(dspenv)
 
         # parse solution to each block
@@ -700,9 +704,14 @@ Get the vector of block IDs that are assigned to the current MPI rank
 
 # Arguments
 - `nblocks`: number of blocks (by default, `DSPProblem.nblocks`)
-- `master_has_subblocks`: indicate whether the master process solves (scenario) blocks or not (should always be `true`?)
+- `master_has_subblocks`: indicate whether the master process solves (scenario) blocks or not (should always be `false`). This should not be modified.
 """
-function getBlockIds(nblocks::Int = dspenv.nblocks, master_has_subblocks::Bool = true)::Vector{Int}
+function getBlockIds(nblocks::Int = dspenv.nblocks; master_has_subblocks::Bool = true)::Vector{Int}
+
+    if getVersionMajor(dspenv) >= 2
+        master_has_subblocks = false
+    end
+
     # processor info
     mysize = dspenv.comm_size
     myrank = dspenv.comm_rank
