@@ -498,6 +498,10 @@ Load problem from StructJuMP
 - `m`: StructJuMP model
 """
 function load_problem!(m::SJ.StructuredModel)
+
+    # set number of blocks (scenarios)
+    dspenv.nblocks = SJ.num_scenarios(m)
+
     if dspenv.is_stochastic
         loadStochasticProblem!(m)
     else
@@ -517,7 +521,7 @@ Load stochastic programming problem from StructJuMP
 """
 function loadStochasticProblem!(model::SJ.StructuredModel)
 
-    nscen = SJ.num_scenarios(model)
+    nscen = dspenv.nblocks
     ncols1 = length(model.variables)
     nrows1 = length(dspenv.linConstrs[0])
     ncols2 = 0
@@ -622,13 +626,15 @@ function solve!()
             if dspenv.is_stochastic
                 solveDd(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Dual decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == Benders
             if dspenv.is_stochastic
                 solveBd(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Benders decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == ExtensiveForm
             solveDe(dspenv);
@@ -636,19 +642,22 @@ function solve!()
             solveDw(dspenv);
         else
             @error("Unexpected error")
+            return
         end
     elseif dspenv.comm_size > 1
         if dspenv.solve_type == Dual
             if dspenv.is_stochastic
                 solveDdMpi(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Dual decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == Benders
             if dspenv.is_stochastic
                 solveBdMpi(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Benders decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == DW
             solveDwMpi(dspenv);
@@ -656,6 +665,7 @@ function solve!()
             solveDe(dspenv);
         else
             @error("Unexpected error")
+            return
         end
     end
 
@@ -664,6 +674,10 @@ function solve!()
 end
 
 function post_solve!()
+    if dspenv.status == 3998
+        return
+    end
+
     # get solution time
     dspenv.solve_time = getWallTime(dspenv)
 
@@ -781,7 +795,6 @@ end
 The function sets the number of blocks (e.g., scenarios for stochastic program) and their Ids.
 """
 function setBlocks()
-    dspenv.nblocks = getNumSubproblems(dspenv)
     dspenv.block_ids = getBlockIds()
     @dsp_ccall("setIntPtrParam", Cvoid, (Ptr{Cvoid}, Ptr{UInt8}, Cint, Ptr{Cint}),
         dspenv.p, "ARR_PROC_IDX", convert(Cint, length(dspenv.block_ids)), convert(Vector{Cint}, dspenv.block_ids .- 1))
