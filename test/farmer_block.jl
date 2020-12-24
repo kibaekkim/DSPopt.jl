@@ -3,6 +3,7 @@ using DSPopt
 include("farmer_models.jl")
 
 m = farmer_blocks()
+DSPopt.classifyConstrs(m)
 
 """
 NOTE: 
@@ -13,7 +14,7 @@ NOTE:
 @testset "Parent model" begin
     @test length(m.variables) == 27
     @test length(m.constraints) == 6
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = DSPopt.get_model_data(m)
     @test length(start) == length(m.constraints) + 1
     @test start[end] == length(index)
     @test start == [0, 2, 4, 6, 8, 10, 12]
@@ -40,7 +41,7 @@ end
     @test i > 0
     @test length(subm.variables) == 0
     @test length(subm.constraints) == 5
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = DSPopt.get_model_data(subm, i)
     @test length(start) == length(subm.constraints) + 1
     @test start[end] == length(index)
     @test start == [0, 3, 6, 9, 12, 13]
