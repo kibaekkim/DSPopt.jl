@@ -167,10 +167,14 @@ function classifyConstrs(m::SJ.StructuredModel)
     end
 end
 
-function get_model_data(m::SJ.StructuredModel)
+function get_model_data(m::SJ.StructuredModel, id::Int = 0)
+
+    # retrieve classified constraints
+    linConstr = dspenv.linConstrs[id]
+    quadConstrs = dspenv.quadConstrs[id]
 
     # Get a column-wise sparse matrix
-    start, index, value, rlbd, rubd = get_constraint_matrix(m, m.constraints)
+    start, index, value, rlbd, rubd = get_constraint_matrix(m, linConstr)
 
     # column information
     clbd = Vector{Float64}(undef, num_variables(m))
@@ -213,56 +217,6 @@ function get_model_data(m::SJ.StructuredModel)
         obj .*= -1
     end
 
-    return start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname
-end
-
-function get_model_data(m::SJ.StructuredModel, linConstrs::Dict{Int64,AbstractConstraint}, quadConstrs::Dict{Int64,AbstractConstraint})
-
-    # Get a column-wise sparse matrix
-    start, index, value, rlbd, rubd = get_constraint_matrix(m, linConstrs)
-
-    # column information
-    clbd = Vector{Float64}(undef, num_variables(m))
-    cubd = Vector{Float64}(undef, num_variables(m))
-    ctype = ""
-    cname = Vector{String}(undef, num_variables(m))
-    for i in 1:num_variables(m)
-        vref = SJ.StructuredVariableRef(m, i)
-        v = m.variables[vref.idx]
-        if v.info.integer
-            ctype = ctype * "I"
-        elseif v.info.binary
-            ctype = ctype * "B"
-        else
-            ctype = ctype * "C"
-        end
-        if v.info.has_fix
-            clbd[vref.idx] = v.info.fixed_value
-            cubd[vref.idx] = v.info.fixed_value
-        elseif v.info.binary
-            clbd[vref.idx] = 0.0
-            cubd[vref.idx] = 1.0
-        else
-            clbd[vref.idx] = v.info.has_lb ? v.info.lower_bound : -Inf
-            cubd[vref.idx] = v.info.has_ub ? v.info.upper_bound : Inf
-        end
-        cname[vref.idx] = m.varnames[vref.idx]
-    end
-
-    # objective coefficients
-    obj = zeros(num_variables(m))
-    if !(objective_function_type(m) <: Real)
-        for (v,coef) in objective_function(m).terms
-            obj[v.idx] = coef
-        end
-    end
-
-    if objective_sense(m) == MOI.MAX_SENSE
-        dspenv.objective_sense = -1.
-        obj .*= -1
-    end
-
-    # get quadratic constraints data
     nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_qc_data(m, quadConstrs)
     return start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval
 end
@@ -401,8 +355,8 @@ function get_qc_data(m::SJ.StructuredModel, quadConstrs::Dict{Int64,AbstractCons
 
     @assert(i == nqrows + 1)
 
-    total_linnzcnt = linstart[nqrows] + linnzcnt[nqrows]
-    total_quadnzcnt = quadstart[nqrows] + quadnzcnt[nqrows]
+    total_linnzcnt = nqrows == 0 ? 0 : linstart[nqrows] + linnzcnt[nqrows]
+    total_quadnzcnt = nqrows == 0 ? 0 : quadstart[nqrows] + quadnzcnt[nqrows]
 
     linind = Vector{Int}(undef, total_linnzcnt)
     linval = Vector{Float64}(undef, total_linnzcnt)
@@ -454,8 +408,10 @@ function get_qc_data(m::SJ.StructuredModel, quadConstrs::Dict{Int64,AbstractCons
         end
     end
 
-    @assert(linpos-1==sum(linnzcnt[k] for k=1:nqrows))
-    @assert(quadpos-1==sum(quadnzcnt[k] for k=1:nqrows))
+    if nqrows > 0
+        @assert(linpos-1==sum(linnzcnt[k] for k=1:nqrows))
+        @assert(quadpos-1==sum(quadnzcnt[k] for k=1:nqrows))
+    end
 
     return nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval
 end
@@ -498,6 +454,10 @@ Load problem from StructJuMP
 - `m`: StructJuMP model
 """
 function load_problem!(m::SJ.StructuredModel)
+
+    # set number of blocks (scenarios)
+    dspenv.nblocks = SJ.num_scenarios(m)
+
     if dspenv.is_stochastic
         loadStochasticProblem!(m)
     else
@@ -517,7 +477,7 @@ Load stochastic programming problem from StructJuMP
 """
 function loadStochasticProblem!(model::SJ.StructuredModel)
 
-    nscen = SJ.num_scenarios(model)
+    nscen = dspenv.nblocks
     ncols1 = length(model.variables)
     nrows1 = length(dspenv.linConstrs[0])
     ncols2 = 0
@@ -547,24 +507,38 @@ function loadStochasticProblem!(model::SJ.StructuredModel)
     setNumberOfScenarios(dspenv, nscen)
     setDimensions(dspenv, ncols1, nrows1, ncols2, nrows2)
 
+    qc_supported = true
+
     # set problem data
-    if length(dspenv.quadConstrs[0]) == 0
-        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(model)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(model)
+    if nqrows == 0
         loadFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
     else
-        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(model, dspenv.linConstrs[0], dspenv.quadConstrs[0])
-        loadQCQPFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+        if getVersionMajor(dspenv) >= 2
+            loadQCQPFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+        else
+            loadFirstStage(dspenv, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+            qc_supported = false
+        end
     end
     
     for (id, blk) in SJ.getchildren(model)
         probability = SJ.getprobability(model)[id]
-        if length(dspenv.quadConstrs[id]) == 0
-            start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
+        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(blk, id)
+        if nqrows == 0
             loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
         else
-            start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(blk, dspenv.linConstrs[id], dspenv.quadConstrs[id])
-            loadQCQPSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+            if getVersionMajor(dspenv) >= 2
+                loadQCQPSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, C_NULL, C_NULL, C_NULL, 0, rlbd, rubd, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval)
+            else
+                loadSecondStage(dspenv, id-1, probability, start, index, value, clbd, cubd, ctype, obj, rlbd, rubd)
+                qc_supported = false
+            end
         end
+    end
+
+    if qc_supported == false
+        @warn "QCQP is not supported with DSP version $(getVersion(dspenv)). The unsupported objective/constraints are ignored."
     end
 
     # Set DRO data
@@ -595,22 +569,31 @@ function loadStructuredProblem!(model::SJ.StructuredModel)
         dspenv.numRows[id] = nrows2
         dspenv.colVal[id] = Vector{Float64}(undef, ncols2)
     end
-
-    # TODO: do something for MPI
     
     # load master
-    start, index, value, rlbd, rubd, obj1, clbd1, cubd1, ctype1, cname = get_model_data(model)
+    start, index, value, rlbd, rubd, obj1, clbd1, cubd1, ctype1, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(model)
     loadBlockProblem(dspenv, 0, ncols1, nrows1, start[end],
         start, index, value, clbd1, cubd1, ctype1, obj1, rlbd, rubd)
 
+    # Check if the master block has quadratic constraints.
+    has_qc = nqrows == 0 ? false : true
+
     # going over blocks
     for (id, blk) in SJ.getchildren(model)
-        probability = SJ.getprobability(model)[id]
         ncols2 = length(blk.variables)
         nrows2 = length(dspenv.linConstrs[id])
-        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = get_model_data(blk)
+        start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = get_model_data(blk, id)
         loadBlockProblem(dspenv, id, ncols1 + ncols2, nrows2, start[end], 
             start, index, value, [clbd1; clbd], [cubd1; cubd], [ctype1; ctype], [obj1; obj], rlbd, rubd)
+
+        # Check if the sub-block has quadratic constraints.
+        if !has_qc && nqrows > 0
+            has_qc = true
+        end
+    end
+
+    if has_qc
+        @warn "Quadratic constraints are not supported for generic structured programs and thus will be ignored."
     end
 
     # Finalize loading blocks
@@ -623,13 +606,15 @@ function solve!()
             if dspenv.is_stochastic
                 solveDd(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Dual decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == Benders
             if dspenv.is_stochastic
                 solveBd(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Benders decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == ExtensiveForm
             solveDe(dspenv);
@@ -637,19 +622,22 @@ function solve!()
             solveDw(dspenv);
         else
             @error("Unexpected error")
+            return
         end
     elseif dspenv.comm_size > 1
         if dspenv.solve_type == Dual
             if dspenv.is_stochastic
                 solveDdMpi(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Dual decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == Benders
             if dspenv.is_stochastic
                 solveBdMpi(dspenv);
             else
-                @error("This method is available for stochastic programs only.")
+                @warn("Benders decomposition is available for stochastic programming only.")
+                return
             end
         elseif dspenv.solve_type == DW
             solveDwMpi(dspenv);
@@ -657,6 +645,7 @@ function solve!()
             solveDe(dspenv);
         else
             @error("Unexpected error")
+            return
         end
     end
 
@@ -665,6 +654,10 @@ function solve!()
 end
 
 function post_solve!()
+    if dspenv.status == 3998
+        return
+    end
+
     # get solution time
     dspenv.solve_time = getWallTime(dspenv)
 
@@ -676,7 +669,12 @@ function post_solve!()
         dspenv.rowVal = getDualSolution(dspenv)
     end
 
-    if abs(dspenv.primVal) < 1.0e+20
+    primVal = dspenv.primVal
+    if mysize() > 1
+        primVal = MPI.bcast(dspenv.primVal, 0, dspenv.comm)
+    end
+
+    if abs(primVal) < 1.0e+20
         primsol = getSolution(dspenv)
 
         # parse solution to each block
@@ -701,9 +699,14 @@ Get the vector of block IDs that are assigned to the current MPI rank
 
 # Arguments
 - `nblocks`: number of blocks (by default, `DSPProblem.nblocks`)
-- `master_has_subblocks`: indicate whether the master process solves (scenario) blocks or not (should always be `true`?)
+- `master_has_subblocks`: indicate whether the master process solves (scenario) blocks or not (should always be `false`). This should not be modified.
 """
-function getBlockIds(nblocks::Int = dspenv.nblocks, master_has_subblocks::Bool = true)::Vector{Int}
+function getBlockIds(nblocks::Int = dspenv.nblocks; master_has_subblocks::Bool = true)::Vector{Int}
+
+    if getVersionMajor(dspenv) >= 2
+        master_has_subblocks = false
+    end
+
     # processor info
     mysize = dspenv.comm_size
     myrank = dspenv.comm_rank
@@ -773,7 +776,6 @@ end
 The function sets the number of blocks (e.g., scenarios for stochastic program) and their Ids.
 """
 function setBlocks()
-    dspenv.nblocks = getNumSubproblems(dspenv)
     dspenv.block_ids = getBlockIds()
     @dsp_ccall("setIntPtrParam", Cvoid, (Ptr{Cvoid}, Ptr{UInt8}, Cint, Ptr{Cint}),
         dspenv.p, "ARR_PROC_IDX", convert(Cint, length(dspenv.block_ids)), convert(Vector{Cint}, dspenv.block_ids .- 1))
