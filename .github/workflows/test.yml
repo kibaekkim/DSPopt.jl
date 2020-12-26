@@ -19,11 +19,15 @@ jobs:
 
     steps:
       - name: Set my secrets
-        uses: webfactory/ssh-agent@v0.4.1
+        uses: appleboy/ssh-action@master
         with:
-            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: Checkout libDsp
-        run: |
-          scp kimk@logins.cels.anl.gov:/nfs/gce/projects/ddo/hello.txt .
-          ls
-          cat hello.txt
+          hoat: "homes.cels.anl.gov"
+          username: "kimk"
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          proxy_host: "logins.cels.anl.gov"
+          proxy_username: "kimk"
+          proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: | 
+            ls -al
+            ls ddo
+            cat ddo/hello.txt
