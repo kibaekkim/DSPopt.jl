@@ -2,11 +2,13 @@ name: Run tests
 
 on:
   push:
+    branches:
+    - master
     paths-ignore:
     - 'README.md'
   pull_request:
     branches:
-      - master
+    - master
 
 jobs:
   test-github-cpuonly:
@@ -25,12 +27,10 @@ jobs:
       - name: Checkout DSPopt.jl
         uses: actions/checkout@v2
       - name: Checkout libDsp
-        uses: actions/checkout@v2
-        with:
-          repository: kibaekkim/libDsp
-          path: libDsp
-          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          lfs: true
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan xgitlab.cels.anl.gov >> ~/.ssh/known_hosts
+          git clone git@xgitlab.cels.anl.gov:kimk/libdsp.git libDsp
       - name: Set path to libDsp
         run: |
           cd libDsp && tar -zxvf DSP.tar.gz && cd ..
