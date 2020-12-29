@@ -65,6 +65,20 @@ end
     include("dcap.jl")
 end
 
+if DSPopt.getVersionMajor(dsp) >= 2
+    @testset "Farmer example: stochastic quadratic form" begin
+        include("farmer_qcp.jl")
+    end
+
+    @testset "Farmer example2: stochastic quadratic form" begin
+        include("farmer_qcp2.jl")
+    end
+
+    @testset "Farmer example3: stochastic quadratic form" begin
+        include("farmer_qcp3.jl")
+    end
+end
+
 @testset "Distributionally robust extension" begin
     include("Dro.jl")
 end
@@ -81,7 +95,7 @@ end
     @test dsp.nblocks == -1
     @test dsp.block_ids == []
     @test dsp.is_stochastic == false
-    @test dsp.solve_type == DSPopt.DW
+    @test dsp.solve_type == DSPopt.Dual
     @test isnothing(dsp.comm)
     @test dsp.comm_size == 1
     @test dsp.comm_rank == 0

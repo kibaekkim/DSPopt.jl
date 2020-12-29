@@ -79,19 +79,20 @@ function DCAP(nR::Int, nN::Int, nT::Int, nS::Int, seed::Int=1)::StructuredModel
 end
 
 m = DCAP(2,2,3,3);
+DSPopt.classifyConstrs(m)
 
 @testset "Parent model" begin
   @test length(m.variables) == 12
   @test length(m.constraints) == 6
-  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m)
-  @test clbd == zeros(Float64, 12)
-  @test cubd == [Inf, Inf, Inf, Inf, Inf, Inf, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-  @test ctype == "CCCCCCBBBBBB"
+  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = DSPopt.get_model_data(m)
+  @show clbd
+  @show cubd
+  @show ctype
   # print(m)
 end
 
 @testset "Child model $i" for (i,subm) in m.children
-  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm)
+  start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = DSPopt.get_model_data(subm, i)
   @test clbd == zeros(Float64, 18)
   @test cubd == ones(Float64, 18)
   @test ctype == "BBBBBBBBBBBBBBBBBB"
