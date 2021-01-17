@@ -3,11 +3,12 @@ using DSPopt
 include("farmer_models.jl")
 
 m = farmer_stochastic()
+DSPopt.classifyConstrs(m)
 
 @testset "Parent model" begin
     @test length(m.variables) == 3
     @test length(m.constraints) == 1
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(m)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = DSPopt.get_model_data(m)
     @test length(start) == length(m.constraints) + 1
     @test start[end] == length(index)
     @test start == [0, 3]
@@ -26,7 +27,7 @@ end
     @test m.probability[i] == probability[i]
     @test length(subm.variables) == 6
     @test length(subm.constraints) == 4
-    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname = DSPopt.get_model_data(subm)
+    start, index, value, rlbd, rubd, obj, clbd, cubd, ctype, cname, nqrows, linnzcnt, quadnzcnt, rhs, sense, linstart, linind, linval, quadstart, quadrow, quadcol, quadval = DSPopt.get_model_data(subm, i)
     @test length(start) == length(subm.constraints) + 1
     @test start[end] == length(index)
     @test start == [0, 3, 6, 9, 10]

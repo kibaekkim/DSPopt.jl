@@ -1,11 +1,19 @@
-# module DSPCInterface
+"""
+    Methods
 
-using Pkg
-using SparseArrays
-using StructJuMP
-using MPI
+List of methods available.
 
-const SJ = StructJuMP
+- `ExtensiveForm`: deterministic equivalent formulation solve
+- `Benders`: Benders decomposition
+- `DW`: Dantzig-Wolfe decomposition
+- `Dual`: Dual decomposition
+"""
+@enum Methods begin
+    ExtensiveForm
+    Benders
+    DW
+    Dual
+end
 
 mutable struct DSPProblem
     p::Ptr{Cvoid}
