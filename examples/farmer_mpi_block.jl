@@ -68,7 +68,7 @@ status = optimize!(m,
     param = "examples/params.txt" # This path assumes running from the one-level upper directory (i.e., ../).
     )
 
-if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
+if DSPopt.myrank() == 0 && status in [MOI.OPTIMAL, MOI.ALMOST_OPTIMAL]
     @show objective_value(m)
     @show dual_objective_value(m)
     @show value.(x)

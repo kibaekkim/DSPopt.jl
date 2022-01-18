@@ -45,7 +45,7 @@ DSPopt.set(WassersteinSet, 2, 1.0)
 
 @testset "optimize!: $j" for j in [DSPopt.Dual, DSPopt.Benders]
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
-    @test DSPopt.termination_status(m) == MOI.OPTIMAL
+    @test DSPopt.termination_status(m) in [MOI.OPTIMAL, MOI.ALMOST_OPTIMAL]
     DSPopt.freeSolver(dsp)
     DSPopt.freeModel(dsp)
 end

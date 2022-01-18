@@ -44,7 +44,7 @@ end
 @testset "optimize!: $j" for j in instances(DSPopt.Methods)
     dsp.is_stochastic = true
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
-    @test DSPopt.termination_status(m) == MOI.OPTIMAL
+    @test DSPopt.termination_status(m) in [MOI.OPTIMAL, MOI.ALMOST_OPTIMAL]
     if dsp.solve_type in [DSPopt.DW, DSPopt.ExtensiveForm]
         @test isapprox(objective_value(m), -108390.)
     else

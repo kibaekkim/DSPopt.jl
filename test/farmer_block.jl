@@ -57,7 +57,7 @@ end
 
 @testset "optimize!: $j" for j in [DSPopt.ExtensiveForm, DSPopt.DW]
     status = DSPopt.optimize!(m, solve_type = j, is_stochastic = false)
-    @test status == MOI.OPTIMAL
+    @test status in [MOI.OPTIMAL, MOI.ALMOST_OPTIMAL]
     @test isapprox(objective_value(m), -108390., rtol=0.01)
     @test isapprox(dual_objective_value(m), -108390., rtol=0.01)
 

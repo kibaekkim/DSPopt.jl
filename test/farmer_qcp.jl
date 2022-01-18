@@ -44,7 +44,7 @@ end
     dsp.is_stochastic = true
     
     status = DSPopt.optimize!(m, is_stochastic = true, solve_type = j)
-    @test DSPopt.termination_status(m) == MOI.OPTIMAL
+    @test DSPopt.termination_status(m) in [MOI.OPTIMAL, MOI.ALMOST_OPTIMAL]
     @test isapprox(dual_objective_value(m), -105093.3333333334, rtol=0.1)
 
     primsol = value()
