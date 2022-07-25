@@ -28,9 +28,9 @@ d = [[1,0,0,0,0,0,0] [0,1,3,0,0,0,0] [0,0,0,1,3,1,3]] # make this sparse
 model = StructuredModel(num_scenarios = 4)
 
 # VARIABLES
-@variable(model, x[n=nodes(tree),t=stage(tree,n)[1]] >= 0, Int)
-@variable(model, w[n=nodes(tree),t=stage(tree,n)[1]] >= 0, Int)
-@variable(model, y[n=nodes(tree),t=stage(tree,n)[1]] >= 0, Int)
+@variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+@variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+@variable(model, y[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
 
 @constraint(model, x[1,0] + w[1,0] - y[1,0] == d[1,1]) # demand at root node
 @constraint(model, x[1,0] <= 2) # production capacity at root node
@@ -45,8 +45,10 @@ for m = 2:length(nodes(tree))
     @objective(blk, Min, 0.5*sum(x[k,1] + 3*w[k,1] + 0.5*y[k,1] for k in 2:3) + 0.25*sum(x[k,2] + 3*w[k,2] for k in 4:7))
 
     # CONSTRAINTS
-    @constraint(blk, [t=stage(tree,m)[1]], x[m,t] <= 2) # production capacity
-    @constraint(blk, [t=stage(tree,m)[1]], y[root(tree,m)[t],t-1] + x[m,t] + w[m,t] - y[m,t] == d[m,t+1]) # demand
+    for t in stage(tree)[m]
+        @constraint(blk, x[m,t] <= 2) # production capacity
+        @constraint(blk, y[root(tree,m)[t],t-1] + x[m,t] + w[m,t] - y[m,t] == d[m,t+1]) # demand
+    end
 end
 
 status = optimize!(model,
