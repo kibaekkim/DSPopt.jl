@@ -18,13 +18,13 @@ Let $x[n]$ be the regular-time production at node $n$, $w[n]$ be the overtime pr
 ### A three-stage integer programming model
 Let $x[n,t]$ be the regular-time production at node $n$ at time period $t$, $w[n,t]$ be the overtime production at node $n$ at time period $t$, and $y[n,t]$ be the number of units stored at node $n$ at time period $t$.
 
-2. Solution for DSP model __with__ non-anticipativity.
+3. Solution for DSP model __with__ non-anticipativity.
 - Optimal objective value: 7.25
 - $x^* = [2, 2, 2, 1, 1, 2, 2]^T$
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^T$
 - $y^* = [1, 2, 0, 2, 0, 1, 0]^T$
 
-3. Solution for DSP model __without__ non-anticipativity. 
+4. Solution for DSP model __without__ non-anticipativity. 
 - Optimal objective value: 6.25
 - $x^* = [2, 1, 2, 0, 2, 1, 2]^T$
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^T$
