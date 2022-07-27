@@ -32,4 +32,4 @@ Let $x[n,t]$ be the regular-time production at node $n$ at time period $t$, $w[n
 
 We assume that overtime labor is a corrective measure that can be taken once the uncertainty is realized - therefore, the variable encoding overtime labor, $w$, is not included in the non-anticipativity constraints. 
 
-The JuMP model can be found in "jump_test.jl", and the DSP model can be found in "three_stage.jl". 
+The JuMP model can be found in "jump_test.jl", and the DSP model can be found in "three_stages.jl". 
