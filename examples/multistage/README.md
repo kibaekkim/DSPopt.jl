@@ -13,20 +13,20 @@ $h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}
 
 We optimize this model using a scenario-tree decomposition via the following 4 methods:
 
-### A single-stage integer programming model
-Let $x[n]$ be the regular-time production at node $n$, $w[n]$ be the overtime production at node $n$, and $y[n]$ be the number of units stored at node $n$.
+### A deterministic integer programming model
+Let $x_t[k]$ be the regular-time production at time $t$ in scenario $k$, $w_t[k]$ be the overtime production at time $t$ in scenario $k$, and $y_t[k]$ be the number of units stored at time $t$ in scenario $k$.
 
 1. Solution for JuMP model __with__ non-anticipativity. 
 - Optimal objective value: 7.25
-- $x^* = [2, 2, 2, 1, 1, 2, 2]^{\top}$
-- $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
-- $y^* = [1, 2, 0, 2, 0, 1, 0]^{\top}$
+- $x_1^* = 2, x_2^* = [2, 2]^{\top}, x_3^* = [1, 1, 2, 2]^{\top}$
+- $w_1^* = 0, w_2^* = [0, 0]^{\top}, x_3^* = [0, 0, 0, 1]^{\top}$
+- $y_1^* = 1, y_2^* = [2, 0]^{\top}, y_3^* = [2, 0, 1, 0]^{\top}$
 
 2. Solution for JuMP model __without__ non-anticipativity. 
 - Optimal objective value: 6.25
-- $x^* = [2, 1, 2, 0, 2, 1, 2]^{\top}$
-- $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
-- $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
+- $x_1^* = 2, x_2^* = [1, 2]^{\top}, x_3^* = [0, 2, 1, 2]^{\top}$
+- $w_1^* = 0, w_2^* = [0, 0]^{\top}, w_3^* = [0, 0, 0, 1]^{\top}$
+- $y_1^* = 1, y_2^* = [1, 0]^{\top}, y_3^* = [0, 0, 0, 0]^{\top}$
 
 ### A three-stage integer programming model
 Let $x[n,t]$ be the regular-time production at node $n$ at time period $t$, $w[n,t]$ be the overtime production at node $n$ at time period $t$, and $y[n,t]$ be the number of units stored at node $n$ at time period $t$.
