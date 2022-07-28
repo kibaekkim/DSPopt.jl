@@ -1,36 +1,55 @@
 using JuMP
 using GLPK
 
-d = [1,1,3,1,3,1,3] # demand vector
+d_1 = 1; # demand in 1st stage
+d_2 = [1,3]; # demand vector for 2nd stage vars
+d_3 = [1,3,1,3]; # demand vector for 3rd stage vars
 
 model = Model(GLPK.Optimizer)
 
 # VARIABLES
-@variable(model, x[1:7] >= 0, Int)
-@variable(model, w[1:7] >= 0, Int)
-@variable(model, y[1:7] >= 0, Int)
+@variable(model, x_1 >= 0, Int)
+@variable(model, w_1 >= 0, Int)
+@variable(model, y_1 >= 0, Int)
+@variable(model, x_2[k=1:2] >= 0, Int)
+@variable(model, w_2[k=1:2] >= 0, Int)
+@variable(model, y_2[k=1:2] >= 0, Int)
+@variable(model, x_3[k=1:4] >= 0, Int)
+@variable(model, w_3[k=1:4] >= 0, Int)
+@variable(model, y_3[k=1:4] >= 0, Int)
 
 # OBJECTIVE
 @objective(model, Min,
-    x[1] + 3*w[1] + 0.5*y[1]
-    + sum(0.5*(x[k] + 3*w[k] + 0.5*y[k]) for k in 2:3)
-    + sum(0.25*(x[k] + 3*w[k]) for k in 4:7)
+    x_1 + 3*w_1 + 0.5*y_1
+    + sum(0.5*(x_2[k] + 3*w_2[k] + 0.5*y_2[k]) for k in 1:2)
+    + sum(0.25*(x_3[k] + 3*w_3[k]) for k in 1:4)
 )
 
 # CONSTRAINTS
-@constraint(model, x[1] + w[1] - y[1] == d[1]) # demand at root node
-@constraint(model, [n=1:7], x[n] <= 2) # production capacity
-# non-anticipativity
-@constraint(model, x[2] == x[3])
-@constraint(model, x[4] == x[5])
-@constraint(model, x[6] == x[7])
+@constraint(model, x_1 + w_1 - y_1 == d_1) # demand at root node
+@constraint(model, x_1 <= 2) # production capacity
+@constraint(model, [k=1:2], x_2[k] <= 2) # production capacity
+@constraint(model, [k=1:4], x_3[k] <= 2) # production capacity
+
 #demand
-@constraint(model, [n=2:3], y[1] + x[n] + w[n] - y[n] == d[n])
-@constraint(model, [n=4:5], y[2] + x[n] + w[n] - y[n] == d[n])
-@constraint(model, [n=6:7], y[3] + x[n] + w[n] - y[n] == d[n])
+@constraint(model, [k=1:2], y_1 + x_2[k] + w_2[k] - y_2[k] == d_2[k])
+@constraint(model, [k=1:2], y_2[1] + x_3[k] + w_3[k] - y_3[k] == d_3[k])
+@constraint(model, [k=3:4], y_2[2] + x_3[k] + w_3[k] - y_3[k] == d_3[k])
+
+# non-anticipativity
+@constraint(model, x_2[1] == x_2[2])
+@constraint(model, x_3[1] == x_3[2])
+@constraint(model, x_3[3] == x_3[4])
 
 optimize!(model)
 termination_status(model)
-value.(x)
-value.(w)
-value.(y)
+objective_value(model)
+value.(x_1)
+value.(w_1)
+value.(y_1)
+value.(x_2)
+value.(w_2)
+value.(y_2)
+value.(x_3)
+value.(w_3)
+value.(y_3)
