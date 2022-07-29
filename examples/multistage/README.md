@@ -1,3 +1,11 @@
+# Multistage Stochastic Optimization
+
+The example is described in page 270 of the following book:
+
+- Birge and Louveaux. "Introduction to Stochastic Programming, Second Edition."
+
+## Problem Description
+
 Consider a 3-stage scenario tree with a single root node at stage 1 and two nodes in stage 2, each of which has two children nodes in stage 3 (thus four leaf nodes). Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario tree, and $\alpha(n)$ the ancestor of node $n$ (with $n = 1$ denoting the root node). The air conditioning production planning problem from Birge & Louveaux can be modeled as a 3-stage stochastic integer program:
 
 $$\eqalign{
@@ -10,25 +18,21 @@ $$\eqalign{
 where
 $h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}, \ h_{3}^{\top} = {\left\lbrack \matrix{1 & 3 & 0} \right\rbrack}, \ d^{\top} = {\left\lbrack \matrix{1 & 1 & 3 & 1 & 3 & 1 & 3} \right\rbrack}, \ \text{and} \ H_{n} = \\{(x_{n},w_{n},y_{n}) \in \mathbb{Z}^{3}_{+} \ | \ x_n \leq 2 \\}.$
 
-
 We optimize this model using a scenario-tree decomposition via the following 4 methods:
 
 ### A deterministic integer programming model
+
 Let $x_t[k]$ be the regular-time production at time $t$ in scenario $k$, $w_t[k]$ be the overtime production at time $t$ in scenario $k$, and $y_t[k]$ be the number of units stored at time $t$ in scenario $k$.
 
-1. Solution for JuMP model __with__ non-anticipativity. 
-- Optimal objective value: 7.25
-- $x_1^* = 2, x_2^* = [2, 2]^{\top}, x_3^* = [1, 1, 2, 2]^{\top}$
-- $w_1^* = 0, w_2^* = [0, 0]^{\top}, x_3^* = [0, 0, 0, 1]^{\top}$
-- $y_1^* = 1, y_2^* = [2, 0]^{\top}, y_3^* = [2, 0, 1, 0]^{\top}$
+Solution for JuMP model
 
-2. Solution for JuMP model __without__ non-anticipativity. 
 - Optimal objective value: 6.25
 - $x_1^* = 2, x_2^* = [1, 2]^{\top}, x_3^* = [0, 2, 1, 2]^{\top}$
 - $w_1^* = 0, w_2^* = [0, 0]^{\top}, w_3^* = [0, 0, 0, 1]^{\top}$
 - $y_1^* = 1, y_2^* = [1, 0]^{\top}, y_3^* = [0, 0, 0, 0]^{\top}$
 
 ### A three-stage integer programming model
+
 Let $x[n,t]$ be the regular-time production at node $n$ at time period $t$, $w[n,t]$ be the overtime production at node $n$ at time period $t$, and $y[n,t]$ be the number of units stored at node $n$ at time period $t$.
 
 3. Solution for DSP model __with__ non-anticipativity.
