@@ -75,11 +75,11 @@ function deterministic_form_with_nonant()
         @constraint(model, [t=1:T-1], y[n,t-1] == y[n,t])
         # demand
         if n == 1
-            @constraint(model, x[n,0] + w[n,0] - y[n,0] == d[n])
+            @constraint(model, [t=0:T-1], x[n,t] + w[n,t] - y[n,t] == d[n])
         elseif n in 2:3
-            @constraint(model, y[root(tree,n)[1],0] + x[n,1] + w[n,1] - y[n,1] == d[n])
+            @constraint(model, [t=1:T-1], y[root(tree,n)[1],0] + x[n,t] + w[n,t] - y[n,t] == d[n])
         else
-            @constraint(model, y[root(tree,n)[2],1] + x[n,2] + w[n,2] - y[n,2] == d[n])
+            @constraint(model, [t=1:T-1], y[root(tree,n)[2],1] + x[n,t] + w[n,t] - y[n,t] == d[n])
         end
     end
 
