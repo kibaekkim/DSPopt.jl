@@ -92,11 +92,11 @@ function deterministic_form_with_nonant()
         # CONSTRAINTS (subprob)
         @constraint(blk, [t=0:T-1], x[m,t] <= 2) # production capacity
         if m == 1 # demand
-            @constraint(model, x[m,0] + w[m,0] - y[m,0] == d[m])
+            @constraint(model, [t=0:T-1], x[m,t] + w[m,t] - y[m,t] == d[m])
         elseif m in 2:3
-            @constraint(blk, y[root(tree,m)[1],0] + x[m,1] + w[m,1] - y[m,1] == d[m])
+            @constraint(blk, [t=1:T-1], y[root(tree,m)[1],0] + x[m,t] + w[m,t] - y[m,t] == d[m])
         else
-            @constraint(blk, y[root(tree,m)[2],1] + x[m,2] + w[m,2] - y[m,2] == d[m])
+            @constraint(blk, [t=1:T-1], y[root(tree,m)[2],1] + x[m,t] + w[m,t] - y[m,t] == d[m])
         end
     end
 
