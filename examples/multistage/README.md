@@ -10,15 +10,14 @@ Consider a 3-stage scenario tree with a single root node at stage 1 and two node
 
 $$\eqalign{
 \min & h_{1}^{\top} {\left\lbrack \matrix{x_{1} \cr w_{1} \cr y_{1}} \right\rbrack} + \sum_{n \in \mathcal{N} \setminus \\{\\{1\\}, \{\mathcal{L}\}\\}} 0.5 h_{2}^{\top} {\left\lbrack \matrix{x_{n} \cr w_{n} \cr y_{n}} \right\rbrack} + \sum_{n \in \{\mathcal{L}\}} 0.25 h_{3}^{\top} {\left\lbrack \matrix{x_{n} \cr w_{n} \cr y_{n}} \right\rbrack} \\
-\text{s.t.} \ & {\left\lbrack \matrix{1 & 1 & -1} \right\rbrack} {\left\lbrack \matrix{x_{1} \cr w_{1} \cr y_{1}} \right\rbrack} = d_{1}, \\
-& {\left\lbrack \matrix{1 & 1 & 1 & -1} \right\rbrack} {\left\lbrack \matrix{ y_{\alpha(n)} \cr x_{n} \cr w_{n} \cr y_{n}} \right\rbrack} = d_{n} \quad \forall n \in \mathcal{N} \setminus \\{1\\}, \\
-& x_{n}, w_{n}, y_{n} \in H_n,
+\text{s.t.} \ & {\left\lbrack \matrix{1 & 1 & 1 & -1} \right\rbrack} {\left\lbrack \matrix{ y_{\alpha(n)} \cr x_{n} \cr w_{n} \cr y_{n}} \right\rbrack} = d_{n} \quad \forall n \in \mathcal{N}, \\
+& x_{n}, w_{n}, y_{n} \in H_n \quad \forall n \in \mathcal{N},
 }$$ 
 
 where
-$h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}, \ h_{3}^{\top} = {\left\lbrack \matrix{1 & 3 & 0} \right\rbrack}, \ d^{\top} = {\left\lbrack \matrix{1 & 1 & 3 & 1 & 3 & 1 & 3} \right\rbrack}, \ \text{and} \ H_{n} = \\{(x_{n},w_{n},y_{n}) \in \mathbb{Z}^{3}_{+} \ | \ x_n \leq 2 \\}.$
+$h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}, \ h_{3}^{\top} = {\left\lbrack \matrix{1 & 3 & 0} \right\rbrack}, \ d^{\top} = {\left\lbrack \matrix{1 & 1 & 3 & 1 & 3 & 1 & 3} \right\rbrack}, \ \text{and} \ H_{n} = \\{(x_{n},w_{n},y_{n}) \in \mathbb{Z}^{3}_{+} \ | \ x_n \leq 2 \\}.$ 
 
-We optimize this model using a scenario-tree decomposition via the following 4 methods:
+We assume there are no units stored before $t=0$, thus, $y_{\alpha(1)} = 0$. We optimize this model using a scenario-tree decomposition via the following methods:
 
 ### A deterministic integer programming model
 
