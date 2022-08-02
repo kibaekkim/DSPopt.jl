@@ -17,7 +17,7 @@ $$\eqalign{
 where
 $h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}, \ h_{3}^{\top} = {\left\lbrack \matrix{1 & 3 & 0} \right\rbrack}, \ d^{\top} = {\left\lbrack \matrix{1 & 1 & 3 & 1 & 3 & 1 & 3} \right\rbrack}, \ \text{and} \ H_{n} = \\{(x_{n},w_{n},y_{n}) \in \mathbb{Z}^{3}_{+} \ | \ x_n \leq 2 \\}.$ 
 
-We assume there are no units stored before $t=0$, thus, $y_{\alpha(1)} = 0$. We optimize this model using a scenario-tree decomposition via the following methods:
+We assume there are no units stored before $t=0$, thus, $y_{\alpha(1)} = 0$. We optimize this model using the following methods:
 
 ### A deterministic integer programming model (scenario decomposition)
 
