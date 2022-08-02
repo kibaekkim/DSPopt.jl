@@ -35,18 +35,11 @@ Solution for JuMP model
 
 Let $x[n,t]$ be the regular-time production at node $n$ at time period $t$, $w[n,t]$ be the overtime production at node $n$ at time period $t$, and $y[n,t]$ be the number of units stored at node $n$ at time period $t$.
 
-3. Solution for DSP model __with__ non-anticipativity.
-- Optimal objective value: 7.25
-- $x^* = [2, 2, 2, 1, 1, 2, 2]^{\top}$
-- $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
-- $y^* = [1, 2, 0, 2, 0, 1, 0]^{\top}$
+Solution for DSP model 
 
-4. Solution for DSP model __without__ non-anticipativity. 
 - Optimal objective value: 6.25
 - $x^* = [2, 1, 2, 0, 2, 1, 2]^{\top}$
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
-
-For the methods __without__ non-anticipativity, we assume that both regular-time labor and overtime labor can be decided after the uncertainty is realized. For the methods __with__ non-anticipativity, we assume that regular-time labor must be decided before the uncertainty is realized, and that overtime labor is a corrective measure that can be taken once the uncertainty is realized - therefore, the variable encoding regular-time labor, $x$, is included in the non-anticipativity constraints, while the variable encoding overtime labor, $w$, is not. 
 
 The JuMP model can be found in "jump_test.jl", and the DSP model can be found in "three_stages.jl". 
