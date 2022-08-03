@@ -21,10 +21,12 @@ function deterministic_form()
 
     # OBJECTIVE (parent)
     @objective(model, Min,
-        x[1,0] + 3*w[1,0] + 0.5*y[1,0]
-        + sum(0.5*(x[k,1] + 3*w[k,1] + 0.5*y[k,1]) for k in 2:3)
-        + sum(0.25*(x[k,2] + 3*w[k,2]) for k in 4:7)
-    )
+        (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
+        (1/2)*sum(
+            x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] + 0.5*y[n,stage(tree)[n]]
+            for n in 2:3) +
+        (1/4)*sum(x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] for n in 4:7)
+            )
 
     for m = 1:length(nodes(tree))
         # create a StructuredModel linked to model with id m
@@ -34,11 +36,14 @@ function deterministic_form()
         @objective(blk, Min, 0.)
 
         # CONSTRAINTS (subprob)
-        @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2) # production capacity
-        if m == 1 # demand
+        # production capacity
+        @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
+        # demand
+        if m == 1
             @constraint(model, x[m,0] + w[m,0] - y[m,0] == d[m])
         else
-            @constraint(blk, [t=stage(tree)[m]], y[root(tree,m)[t],t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
+            @constraint(blk, [t=stage(tree)[m]],
+                y[root(tree,m)[t],t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
         end
     end
 
@@ -69,18 +74,17 @@ function deterministic_form_with_nonant()
 
     # OBJECTIVE (parent)
     @objective(model, Min,
-        (1/3) * sum(
-            (x[1,t] + 3*w[1,t] + 0.5*y[1,t]) +
-            (1/2)*sum(x[n,t] + 3*w[n,t] + 0.5*y[n,t] for n=2:3) +
-            (1/4)*sum(x[n,t] + 3*w[n,t] for n=4:7) for t=0:T-1
-        )
-    )
+        (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
+        (1/2)*sum(
+            x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] + 0.5*y[n,stage(tree)[n]]
+                for n=2:3) +
+        (1/4)*sum(x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] for n=4:7)
+            )
 
     # CONSTRAINTS (parent)
     # non-anticipativity
-    @constraint(model, [n=nodes(tree),t=1:T-1], x[n,t-1] == x[n,t])
-    @constraint(model, [n=nodes(tree),t=1:T-1], w[n,t-1] == w[n,t])
-    @constraint(model, [n=nodes(tree),t=1:T-1], y[n,t-1] == y[n,t])
+    @constraint(model, [n=2:length(nodes(tree))],
+        y[Int(floor(n/2)), stage(tree)[n]-1] == y[n, stage(tree)[n]-1])
 
     for m = 1:length(nodes(tree))
         # create a StructuredModel linked to model with id m
@@ -90,13 +94,14 @@ function deterministic_form_with_nonant()
         @objective(blk, Min, 0.)
 
         # CONSTRAINTS (subprob)
-        @constraint(blk, [t=0:T-1], x[m,t] <= 2) # production capacity
-        if m == 1 # demand
-            @constraint(model, [t=0:T-1], x[m,t] + w[m,t] - y[m,t] == d[m])
-        elseif m in 2:3
-            @constraint(blk, [t=1:T-1], y[root(tree,m)[1],0] + x[m,t] + w[m,t] - y[m,t] == d[m])
+        # production capacity
+        @constraint(blk, [t=0:T-1], x[m,t] <= 2)
+        # demand
+        if m == 1
+            @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
         else
-            @constraint(blk, [t=1:T-1], y[root(tree,m)[2],1] + x[m,t] + w[m,t] - y[m,t] == d[m])
+            @constraint(blk, [t=stage(tree)[m]],
+                y[m,t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
         end
     end
 
