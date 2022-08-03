@@ -58,30 +58,23 @@ function deterministic_form_with_nonant()
 
     # OBJECTIVE
     @objective(model, Min,
-        (1/3) * sum(
-            (x[1,t] + 3*w[1,t] + 0.5*y[1,t]) +
-            (1/2)*sum(x[n,t] + 3*w[n,t] + 0.5*y[n,t] for n=2:3) +
-            (1/4)*sum(x[n,t] + 3*w[n,t] for n=4:7) for t=0:T-1
-        )
+        sum(
+            (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
+            (1/2)*sum(x[n,1] + 3*w[n,1] + 0.5*y[n,1] for n=2:3) +
+            (1/4)*sum(x[n,2] + 3*w[n,2] for n=4:7)
+            )
     )
 
     # CONSTRAINTS
-    for n = 1:length(nodes(tree))
-        # production capacity
-        @constraint(model, [t=0:T-1], x[n,t] <= 2)
-        # non-anticipativity
-        @constraint(model, [t=1:T-1], x[n,t-1] == x[n,t])
-        @constraint(model, [t=1:T-1], w[n,t-1] == w[n,t])
-        @constraint(model, [t=1:T-1], y[n,t-1] == y[n,t])
-        # demand
-        if n == 1
-            @constraint(model, [t=0:T-1], x[n,t] + w[n,t] - y[n,t] == d[n])
-        elseif n in 2:3
-            @constraint(model, [t=1:T-1], y[root(tree,n)[1],0] + x[n,t] + w[n,t] - y[n,t] == d[n])
-        else
-            @constraint(model, [t=1:T-1], y[root(tree,n)[2],1] + x[n,t] + w[n,t] - y[n,t] == d[n])
-        end
-    end
+    # non-anticipativity
+    @constraint(model, [n=1:2], y[n,0] == y[n+1,0])
+    @constraint(model, [n=4:5], y[2,1] == y[n,1])
+    @constraint(model, [n=6:7], y[3,1] == y[n,1])
+    # production capacity
+    @constraint(model, [n=1:length(nodes(tree)), t=0:T-1], x[n,t] <= 2)
+    # demand
+    @constraint(model, x[1,0] + w[1,0] - y[1,0] == d[1])
+    @constraint(model, [n=2:length(nodes(tree)), t=stage(tree)[n]], y[n,t-1] + x[n,t] + w[n,t] - y[n,t] == d[n])
 
     optimize!(model)
     @show termination_status(model)
