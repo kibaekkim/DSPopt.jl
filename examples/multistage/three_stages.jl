@@ -67,10 +67,12 @@ function deterministic_form_with_nonant()
     # create StructuredModel with number of scenarios
     model = StructuredModel(num_scenarios = length(nodes(tree))-1)
 
+    ystages = [[0], [0,1], [1,2]];
+
     # VARIABLES
     @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
     @variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
-    @variable(model, y[n in nodes(tree),t=0:T-1] >= 0, Int)
+    @variable(model, y[n in 1:length(nodes(tree)),t=ystages[stage(tree)[n]+1]] >= 0, Int)
 
     # OBJECTIVE (parent)
     @objective(model, Min,
