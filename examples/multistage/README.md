@@ -8,7 +8,7 @@ The example is described in page 270 of the following book:
 
 Consider a 3-stage scenario tree with a single root node at stage 1 and two nodes in stage 2, each of which has two children nodes in stage 3 (thus four leaf nodes). Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario tree, and $\alpha(n)$ the ancestor of node $n$ (with $n = 1$ denoting the root node). 
 
-The air conditioning production planning problem from Birge & Louveaux can be modeled as a 3-stage stochastic integer program using two different decompositions:
+The air conditioning production planning problem from Birge & Louveaux can be modeled as a stochastic integer program using two different decompositions:
 
 #### Nodal Decomposition:
 
