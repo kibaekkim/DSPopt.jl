@@ -61,9 +61,7 @@ Solution for JuMP model
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
 
-### A three-stage integer programming model
-
-Let $x[n,t]$ be the regular-time production at node $n$ at time period $t$, $w[n,t]$ be the overtime production at node $n$ at time period $t$, and $y[n,t]$ be the number of units stored at node $n$ at time period $t$.
+### A three-stage integer programming model (nodal decomposition)
 
 Solution for DSP model 
 
