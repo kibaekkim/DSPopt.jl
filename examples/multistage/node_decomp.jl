@@ -48,10 +48,12 @@ end
 function deterministic_form_with_nonant()
     model = Model(GLPK.Optimizer)
 
+    ystages = [[0], [0,1], [1,2]];
+
     # VARIABLES
     @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
     @variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
-    @variable(model, y[n in nodes(tree),t=0:T-1] >= 0, Int)
+    @variable(model, y[n in 1:length(nodes(tree)),t=ystages[stage(tree)[n]+1]] >= 0, Int)
 
     # OBJECTIVE
     @objective(model, Min,
