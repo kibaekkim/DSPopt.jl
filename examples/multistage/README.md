@@ -12,7 +12,7 @@ The air conditioning production planning problem from Birge & Louveaux can be mo
 
 #### Nodal Decomposition:
 
-Let $x_{n}^{t}$ be the regular-time production at node $n$ at time period $t$, $w_{n}^{t}$ be the overtime production at node $n$ at time period $t$, and $y_{n}^{t}$ be the number of units stored at node $n$ at time period $t$. We assume there are no units stored before $t=0$, so $y_{1}^{-1} = 0$). 
+Let $x_{n}^{t}$ be the regular-time production at node $n$ at time period $t$, $w_{n}^{t}$ be the overtime production at node $n$ at time period $t$, and $y_{n}^{t}$ be the number of units stored at node $n$ at time period $t$. We assume there are no units stored before $t=0$, so $y_{1}^{-1} = 0$. 
 
 $$\eqalign{
 \min & h_{1}^{\top} {\left\lbrack \matrix{x_{1}^{0} \cr w_{1}^{0} \cr y_{1}^{0}} \right\rbrack} + \sum_{n \in \mathcal{N} \setminus \\{\\{1\\}, \{\mathcal{L}\}\\}} 0.5 h_{2}^{\top} {\left\lbrack \matrix{x_{n}^{1} \cr w_{n}^{1} \cr y_{n}^{1}} \right\rbrack} + \sum_{n \in \{\mathcal{L}\}} 0.25 h_{3}^{\top} {\left\lbrack \matrix{x_{n}^{2} \cr w_{n}^{2}} \right\rbrack} \\
@@ -41,7 +41,7 @@ $$\eqalign{
 
 Similarly with the nodal decomposition, we can incorporate non-anticipativity into the model endogenously or explicitly. 
 
-We optimize these models using the following methods:
+The files in this folder include: 
 
 ### A deterministic integer programming model (scenario decomposition)
 
