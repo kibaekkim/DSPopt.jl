@@ -49,8 +49,8 @@ function deterministic_form_with_nonant()
     model = Model(GLPK.Optimizer)
 
     # VARIABLES
-    @variable(model, x[n in nodes(tree),t=0:T-1] >= 0, Int)
-    @variable(model, w[n in nodes(tree),t=0:T-1] >= 0, Int)
+    @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+    @variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
     @variable(model, y[n in nodes(tree),t=0:T-1] >= 0, Int)
 
     # OBJECTIVE
@@ -67,7 +67,7 @@ function deterministic_form_with_nonant()
     @constraint(model, [n=2:length(nodes(tree))],
         y[Int(floor(n/2)), stage(tree)[n]-1] == y[n, stage(tree)[n]-1])
     # production capacity
-    @constraint(model, [n=1:length(nodes(tree)), t=0:T-1], x[n,t] <= 2)
+    @constraint(model, [n=1:length(nodes(tree)), t=stage(tree)[n]], x[n,t] <= 2)
     # demand
     @constraint(model, x[1,0] + w[1,0] - y[1,0] == d[1])
     @constraint(model, [n=2:length(nodes(tree)), t=stage(tree)[n]],
