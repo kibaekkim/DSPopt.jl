@@ -68,8 +68,8 @@ function deterministic_form_with_nonant()
     model = StructuredModel(num_scenarios = length(nodes(tree))-1)
 
     # VARIABLES
-    @variable(model, x[n in nodes(tree),t=0:T-1] >= 0, Int)
-    @variable(model, w[n in nodes(tree),t=0:T-1] >= 0, Int)
+    @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+    @variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
     @variable(model, y[n in nodes(tree),t=0:T-1] >= 0, Int)
 
     # OBJECTIVE (parent)
@@ -95,7 +95,7 @@ function deterministic_form_with_nonant()
 
         # CONSTRAINTS (subprob)
         # production capacity
-        @constraint(blk, [t=0:T-1], x[m,t] <= 2)
+        @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
         # demand
         if m == 1
             @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
