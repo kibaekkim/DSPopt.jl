@@ -1,6 +1,7 @@
 using ScenTrees # This package should be added before the package below. I don't know why...
 using StructJuMP
 using DSPopt
+using MPI
 
 # scenario tree w/ 3 stages, each parent node has 2 children; dim = 1
 tree = Tree([1,2,2],1);
@@ -11,8 +12,11 @@ d = [1,1,3,1,3,1,3] # demand vector
 
 function deterministic_form()
 
+    #MPI.Init()
+    #DSPopt.parallelize(MPI.COMM_WORLD)
+
     # create StructuredModel with number of scenarios
-    model = StructuredModel(num_scenarios = length(nodes(tree))-1)
+    model = StructuredModel(num_scenarios = length(leaves(tree)[2]))
 
     # VARIABLES
     @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
@@ -38,9 +42,10 @@ function deterministic_form()
         # CONSTRAINTS (subprob)
         # production capacity
         @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
+
         # demand
         if m == 1
-            @constraint(model, x[m,0] + w[m,0] - y[m,0] == d[m])
+            @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
         else
             @constraint(blk, [t=stage(tree)[m]],
                 y[root(tree,m)[t],t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
@@ -49,23 +54,29 @@ function deterministic_form()
 
     status = optimize!(model,
         is_stochastic = false, # Needs to indicate that the model is NOT a stochastic program.
-        solve_type = DSPopt.ExtensiveForm, # see instances(DSPopt.Methods) for other methods
+        solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
     )
 
-    if status == MOI.OPTIMAL
+    if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
+    #if status == MOI.OPTIMAL
         @show objective_value(model)
         @show value.(x)
         @show value.(w)
         @show value.(y)
     end
     return
+
+    #MPI.Finalize()
 end
 
 
 function deterministic_form_with_nonant()
 
+    #MPI.Init()
+    #DSPopt.parallelize(MPI.COMM_WORLD)
+
     # create StructuredModel with number of scenarios
-    model = StructuredModel(num_scenarios = length(nodes(tree))-1)
+    model = StructuredModel(num_scenarios = length(leaves(tree)[2]))
 
     ystages = [[0], [0,1], [1,2]];
 
@@ -98,6 +109,9 @@ function deterministic_form_with_nonant()
         # CONSTRAINTS (subprob)
         # production capacity
         @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
+        @constraint(blk, [t=stage(tree)[m]], w[m,t] <= 10) # need upper bounds on all vars for some reason
+        @constraint(blk, [t=stage(tree)[m]], y[m,t] <= 10)
+
         # demand
         if m == 1
             @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
@@ -109,14 +123,17 @@ function deterministic_form_with_nonant()
 
     status = optimize!(model,
         is_stochastic = false, # Needs to indicate that the model is NOT a stochastic program.
-        solve_type = DSPopt.ExtensiveForm, # see instances(DSPopt.Methods) for other methods
+        solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
     )
 
-    if status == MOI.OPTIMAL
+    if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
+    #if status == MOI.OPTIMAL
         @show objective_value(model)
         @show value.(x)
         @show value.(w)
         @show value.(y)
     end
     return
+
+    #MPI.Finalize()
 end
