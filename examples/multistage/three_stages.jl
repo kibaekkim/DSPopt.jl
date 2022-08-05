@@ -9,131 +9,65 @@ T = 3; # number of stages
 
 d = [1,1,3,1,3,1,3] # demand vector
 
+MPI.Init()
+DSPopt.parallelize(MPI.COMM_WORLD)
 
-function deterministic_form()
+# create StructuredModel with number of scenarios
+model = StructuredModel(num_scenarios = length(leaves(tree)[2]))
 
-    #MPI.Init()
-    #DSPopt.parallelize(MPI.COMM_WORLD)
+ystages = [[0], [0,1], [1,2]];
 
-    # create StructuredModel with number of scenarios
-    model = StructuredModel(num_scenarios = length(leaves(tree)[2]))
+# VARIABLES
+@variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+@variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+@variable(model, y[n in 1:length(nodes(tree)),t=ystages[stage(tree)[n]+1]] >= 0, Int)
 
-    # VARIABLES
-    @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
-    @variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
-    @variable(model, y[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
+# OBJECTIVE (parent)
+@objective(model, Min,
+    (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
+    (1/2)*sum(
+        x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] + 0.5*y[n,stage(tree)[n]]
+            for n=2:3) +
+    (1/4)*sum(x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] for n=4:7)
+        )
 
-    # OBJECTIVE (parent)
-    @objective(model, Min,
-        (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
-        (1/2)*sum(
-            x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] + 0.5*y[n,stage(tree)[n]]
-            for n in 2:3) +
-        (1/4)*sum(x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] for n in 4:7)
-            )
+# CONSTRAINTS (parent)
+# non-anticipativity
+@constraint(model, [n=2:length(nodes(tree))],
+    y[Int(floor(n/2)), stage(tree)[n]-1] == y[n, stage(tree)[n]-1])
 
-    for m = 1:length(nodes(tree))
-        # create a StructuredModel linked to model with id m
-        blk = StructuredModel(parent = model, id = m)
+for m = 1:length(nodes(tree))
+    # create a StructuredModel linked to model with id m
+    blk = StructuredModel(parent = model, id = m)
 
-        # OBJECTIVE (subprob)
-        @objective(blk, Min, 0.)
+    # OBJECTIVE (subprob)
+    @objective(blk, Min, 0.)
 
-        # CONSTRAINTS (subprob)
-        # production capacity
-        @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
+    # CONSTRAINTS (subprob)
+    # production capacity
+    @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
+    @constraint(blk, [t=stage(tree)[m]], w[m,t] <= 10) # need upper bounds on all vars for some reason
+    @constraint(blk, [t=stage(tree)[m]], y[m,t] <= 10)
 
-        # demand
-        if m == 1
-            @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
-        else
-            @constraint(blk, [t=stage(tree)[m]],
-                y[root(tree,m)[t],t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
-        end
+    # demand
+    if m == 1
+        @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
+    else
+        @constraint(blk, [t=stage(tree)[m]],
+            y[m,t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
     end
-
-    status = optimize!(model,
-        is_stochastic = false, # Needs to indicate that the model is NOT a stochastic program.
-        solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
-    )
-
-    if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
-    #if status == MOI.OPTIMAL
-        @show objective_value(model)
-        @show value.(x)
-        @show value.(w)
-        @show value.(y)
-    end
-    return
-
-    #MPI.Finalize()
 end
 
+status = optimize!(model,
+    is_stochastic = false, # Needs to indicate that the model is NOT a stochastic program.
+    solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
+)
 
-function deterministic_form_with_nonant()
-
-    #MPI.Init()
-    #DSPopt.parallelize(MPI.COMM_WORLD)
-
-    # create StructuredModel with number of scenarios
-    model = StructuredModel(num_scenarios = length(leaves(tree)[2]))
-
-    ystages = [[0], [0,1], [1,2]];
-
-    # VARIABLES
-    @variable(model, x[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
-    @variable(model, w[n in nodes(tree),t in stage(tree)[n]] >= 0, Int)
-    @variable(model, y[n in 1:length(nodes(tree)),t=ystages[stage(tree)[n]+1]] >= 0, Int)
-
-    # OBJECTIVE (parent)
-    @objective(model, Min,
-        (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
-        (1/2)*sum(
-            x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] + 0.5*y[n,stage(tree)[n]]
-                for n=2:3) +
-        (1/4)*sum(x[n,stage(tree)[n]] + 3*w[n,stage(tree)[n]] for n=4:7)
-            )
-
-    # CONSTRAINTS (parent)
-    # non-anticipativity
-    @constraint(model, [n=2:length(nodes(tree))],
-        y[Int(floor(n/2)), stage(tree)[n]-1] == y[n, stage(tree)[n]-1])
-
-    for m = 1:length(nodes(tree))
-        # create a StructuredModel linked to model with id m
-        blk = StructuredModel(parent = model, id = m)
-
-        # OBJECTIVE (subprob)
-        @objective(blk, Min, 0.)
-
-        # CONSTRAINTS (subprob)
-        # production capacity
-        @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
-        @constraint(blk, [t=stage(tree)[m]], w[m,t] <= 10) # need upper bounds on all vars for some reason
-        @constraint(blk, [t=stage(tree)[m]], y[m,t] <= 10)
-
-        # demand
-        if m == 1
-            @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
-        else
-            @constraint(blk, [t=stage(tree)[m]],
-                y[m,t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
-        end
-    end
-
-    status = optimize!(model,
-        is_stochastic = false, # Needs to indicate that the model is NOT a stochastic program.
-        solve_type = DSPopt.DW, # see instances(DSPopt.Methods) for other methods
-    )
-
-    if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
-    #if status == MOI.OPTIMAL
-        @show objective_value(model)
-        @show value.(x)
-        @show value.(w)
-        @show value.(y)
-    end
-    return
-
-    #MPI.Finalize()
+if DSPopt.myrank() == 0 && status == MOI.OPTIMAL
+    @show objective_value(model)
+    @show value.(x)
+    @show value.(w)
+    @show value.(y)
 end
+
+MPI.Finalize()
