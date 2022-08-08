@@ -46,8 +46,8 @@ for m = 1:length(nodes(tree))
     # CONSTRAINTS (subprob)
     # production capacity
     @constraint(blk, [t=stage(tree)[m]], x[m,t] <= 2)
-    @constraint(blk, [t=stage(tree)[m]], w[m,t] <= 10) # need upper bounds on all vars for some reason
-    @constraint(blk, [t=stage(tree)[m]], y[m,t] <= 10)
+    @constraint(blk, [t=stage(tree)[m]], w[m,t] <= maximum(d)) # need upper bounds on all vars for some reason
+    @constraint(blk, [t=stage(tree)[m]], y[m,t] <= maximum(d))
 
     # demand
     if m == 1
