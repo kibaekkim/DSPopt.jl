@@ -94,4 +94,11 @@ Solution for DSP model
 - $w^* = [0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0]^{\top}$
 
-The JuMP models can be found in "scen_decomp.jl" (scenario decomposition) and "node_decomp.jl" (nodal decomposition), and the DSP models can be found in "three_stages.jl" (scenario tree) and "markov.jl" (scenario lattice). 
+Solution for JuMP model
+
+ Optimal objective value: 6.5
+- $x^* = [2, 0, 2, 1, 2]^{\top}$
+- $w^* = [0, 0, 0, 0, 1]^{\top}$
+- $y^* = [1, 0, 0, 0, 0]^{\top}$
+
+The JuMP models can be found in "scen_decomp.jl" (scen decomp w/ scen tree), "node_decomp.jl" (nodal decomp w/ scen tree), and "jump_markov.jl" (nodal decomp w/ scen lattice). The DSP models can be found in "three_stages.jl" (nodal decomp w/ scen tree) and "markov.jl" (nodal decomp w/ scen lattice). 
