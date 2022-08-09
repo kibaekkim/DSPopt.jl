@@ -96,7 +96,7 @@ Solution for DSP model
 
 Solution for JuMP model
 
- Optimal objective value: 6.5
+- Optimal objective value: 6.5
 - $x^* = [2, 0, 2, 1, 2]^{\top}$
 - $w^* = [0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 0, 0, 0, 0]^{\top}$
