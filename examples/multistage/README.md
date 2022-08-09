@@ -6,11 +6,15 @@ The example is described in page 270 of the following book:
 
 ## Problem Description
 
+#### Scenario Tree
 Consider a 3-stage scenario tree with a single root node at stage 1 and two nodes in stage 2, each of which has two children nodes in stage 3 (thus four leaf nodes). Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario tree, and $\alpha(n)$ the ancestor of node $n$ (with $n = 1$ denoting the root node). 
 
-The air conditioning production planning problem from Birge & Louveaux can be modeled as a stochastic integer program using two different decompositions:
+#### Scenario Lattice 
+Consider a 3-stage scenario lattice with a single root node at stage 1 with two children nodes in stage 2, and two leaf nodes in stage 3 that are each connected to both of the nodes in stage 2. Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario lattice (with $n = 1$ denoting the root node). 
 
-#### Nodal Decomposition:
+The air conditioning production planning problem from Birge & Louveaux can be modeled as a stochastic integer program using both a scenario tree or a scenario lattice, either by nodal or scenario decomposition:
+
+#### Nodal Decomposition using a Scenario Tree:
 
 Let $x_{n}^{t}$ be the regular-time production at node $n$ at time period $t$, $w_{n}^{t}$ be the overtime production at node $n$ at time period $t$, and $y_{n}^{t}$ be the number of units stored at node $n$ at time period $t$. We assume there are no units stored before $t=0$, so $y_{1}^{-1} = 0$. 
 
@@ -28,8 +32,19 @@ We can incorporate non-anticipativity into the model endogenously by having $t$ 
 - Decision variables $y_{n}^{t}$ AND $y_{n}^{t-1}$ for each node $n$, where $t$ denotes the stage of node $n$. 
 - Including the non-anticipativity constraints: $y_{1}^{0} = y_{2}^{0} = y_{3}^{0}, \ y_{2}^{1} = y_{4}^{1} = y_{5}^{1}, \ y_{3}^{1} = y_{6}^{1} = y_{7}^{1}$.
 
+#### Nodal Decomposition using a Scenario Lattice:
 
-#### Scenario Decomposition:
+Let $x_{n}^{t}$ be the regular-time production at node $n$ at time period $t$, $w_{n}^{t}$ be the overtime production at node $n$ at time period $t$, and $y_{n}^{t}$ be the number of units stored at node $n$ at time period $t$. We assume there are no units stored before $t=0$. 
+
+$$\eqalign{
+\min & h_{1}^{\top} {\left\lbrack \matrix{x_{1}^{0} \cr w_{1}^{0} \cr y_{1}^{0}} \right\rbrack} + \sum_{n \in \mathcal{N} \setminus \\{\\{1\\}, \{\mathcal{L}\}\\}} 0.5 h_{2}^{\top} {\left\lbrack \matrix{x_{n}^{1} \cr w_{n}^{1} \cr y_{n}^{1}} \right\rbrack} + \sum_{n \in \{\mathcal{L}\}} 0.5 h_{3}^{\top} {\left\lbrack \matrix{x_{n}^{2} \cr w_{n}^{2}} \right\rbrack} \\
+\text{s.t.} \ & {\left\lbrack \matrix{1 & 1 & 1 & -1} \right\rbrack} {\left\lbrack \matrix{ y_{n}^{t-i} \cr x_{n}^{t} \cr w_{n}^{t} \cr y_{n}^{t}} \right\rbrack} = d_{n} \quad \forall n \in \mathcal{N}, i \in \\{1,...,t\\}, \\
+& x_{n}^{t}, w_{n}^{t}, y_{n}^{t} \in H_n \quad \forall n \in \mathcal{N}. 
+}$$ 
+
+Let $\mathcal{N^{even}}$ be the set of even-numbered nodes (similarly with $\mathcal{N^{odd}}$). We can, again, incorporate non-anticipativity endogenously into the model, or include the constraints: $y_{n}^{t} = y_{n+i}^{t-1} \ \forall n \in \\{\mathcal{N^{even}} \setminus \mathcal{L}\\}, i = \\{2,3\\}$, and $y_{n}^{t} = y_{n+i}^{t} \ \forall n \in \\{\mathcal{N^{odd}} \setminus \mathcal{L}\\}, i = \\{1,2\\}$.
+
+#### Scenario Decomposition using a Scenario Tree:
 
 Let $x_{t}^{k}$ be the regular-time production at time $t$ in scenario $k$, $w_{t}^{k}$ be the overtime production at time $t$ in scenario $k$, and $y_{t}^{k}$ be the number of units stored at time $t$ in scenario $k$. Since we assume there are no units stored before $t=0$, $y_{\alpha(1)} = 0$. 
 
@@ -43,7 +58,7 @@ Similarly with the nodal decomposition, we can incorporate non-anticipativity in
 
 The files in this folder include: 
 
-### A deterministic integer programming model (scenario decomposition)
+### A deterministic integer programming model using a scenario tree (scenario decomposition)
 
 Solution for JuMP model
 
@@ -52,7 +67,7 @@ Solution for JuMP model
 - $w_1^* = 0, w_2^* = [0, 0]^{\top}, w_3^* = [0, 0, 0, 1]^{\top}$
 - $y_1^* = 1, y_2^* = [1, 0]^{\top}, y_3^* = [0, 0, 0, 0]^{\top}$
 
-### A deterministic integer programming model (nodal decomposition)
+### A deterministic integer programming model using a scenario tree (nodal decomposition)
 
 Solution for JuMP model
 
@@ -61,7 +76,7 @@ Solution for JuMP model
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
 
-### A three-stage integer programming model (nodal decomposition)
+### A three-stage integer programming model using a scenario tree (nodal decomposition)
 
 Solution for DSP model 
 
@@ -70,4 +85,13 @@ Solution for DSP model
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
 
-The JuMP models can be found in "scen_decomp.jl" (scenario decomposition) and "node_decomp.jl" (nodal decomposition), and the DSP model can be found in "three_stages.jl". 
+### A three-stage integer programming model using a scenario lattice (nodal decomposition)
+
+Solution for DSP model 
+
+- Optimal objective value: 6.5
+- $x^* = [2, 0, 2, 1, 2]^{\top}$
+- $w^* = [0, 0, 0, 0, 1]^{\top}$
+- $y^* = [1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0]^{\top}$
+
+The JuMP models can be found in "scen_decomp.jl" (scenario decomposition) and "node_decomp.jl" (nodal decomposition), and the DSP models can be found in "three_stages.jl" (scenario tree) and "markov.jl" (scenario lattice). 
