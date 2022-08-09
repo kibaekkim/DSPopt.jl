@@ -83,7 +83,7 @@ Solution for DSP model
 - Optimal objective value: 6.25
 - $x^* = [2, 1, 2, 0, 2, 1, 2]^{\top}$
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
-- $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
+- $y^* = [1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0]^{\top}$
 
 ### A three-stage integer programming model using a scenario lattice (nodal decomposition)
 
