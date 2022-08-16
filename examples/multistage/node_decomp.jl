@@ -43,10 +43,8 @@ end
 # OBJECTIVE
 @objective(model, Min,
     (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
-    (1/2)*sum(
-        x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]]
-            for n=2:3) +
-    (1/4)*sum(x[n,stage[n]] + 3*w[n,stage[n]] for n=4:7)
+    sum((1/(2^(stage[n])))*(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]]) for n in 2:2^(T-1)-1) +
+    sum((1/(2^(stage[n])))*(x[n,stage[n]] + 3*w[n,stage[n]]) for n in 2^(T-1):(2^T)-1)
         )
 
 # CONSTRAINTS
