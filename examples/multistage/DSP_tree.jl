@@ -32,7 +32,11 @@ DSPopt.parallelize(MPI.COMM_WORLD)
 # create StructuredModel with number of scenarios
 model = StructuredModel(num_scenarios = 2^(T-1))
 
-ystages = [[0], [0,1], [1,2]];
+ystages = Vector{Vector{Int64}}(undef, T); # index for y
+ystages[1] = [0];
+for t in 2:T
+    ystages[t] = [t-2,t-1];
+end
 
 # VARIABLES
 @variable(model, x[n in nodes, t in stage[n]] >= 0, Int)
@@ -42,8 +46,8 @@ ystages = [[0], [0,1], [1,2]];
 # OBJECTIVE (parent)
 @objective(model, Min,
     (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
-    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]] for n=2:3) +
-    (1/4)*sum(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]] for n=4:7)
+    sum((1/(2^(stage[n])))*(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]]) for n in 2:2^(T-1)-1) +
+    sum((1/(2^(stage[n])))*(x[n,stage[n]] + 3*w[n,stage[n]]) for n in 2^(T-1):(2^T)-1)
         )
 
 # CONSTRAINTS (parent)
