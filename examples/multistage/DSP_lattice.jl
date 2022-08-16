@@ -5,9 +5,9 @@ using MPI
 T = 3; # number of stages - MUST BE >= 3 !!
 
 # scenario lattice w/ T stages
-nodes = 1:2T-1; # nodes in lattice
-stage = Vector{Int64}(undef, 2T-1); # stage of each node in lattice
-d = Vector{Int64}(undef, 2T-1); # demand vector
+nodes = 1:2*T-1; # nodes in lattice
+stage = Vector{Int64}(undef, 2*T-1); # stage of each node in lattice
+d = Vector{Int64}(undef, 2*T-1); # demand vector
 for i in nodes
     if i == 1 # stage/demand for root node
         stage[i] = 0;
@@ -28,7 +28,12 @@ DSPopt.parallelize(MPI.COMM_WORLD)
 # create StructuredModel with number of scenarios
 model = StructuredModel(num_scenarios = 2^(T-1))
 
-ystages = [[0], [0,1], [0,1,2]];
+ystages = Vector{Vector{Int64}}(undef, T); # index for y
+ystages[1] = [0];
+ystages[2] = [0,1];
+for t in 3:T
+    ystages[t] = [t-3,t-2,t-1];
+end
 
 # VARIABLES
 @variable(model, x[n in nodes,  t in stage[n]] >= 0, Int)
@@ -38,12 +43,12 @@ ystages = [[0], [0,1], [0,1,2]];
 # OBJECTIVE (parent)
 @objective(model, Min,
     (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
-    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]] for n=2:3) +
-    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] for n=4:5)
+    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]] for n=2:2*T-3) +
+    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] for n=2*T-2:2*T-1)
            )
 
 # CONSTRAINTS (parent): non-anticipativity
-for n in 1:(2T-1)-2
+for n in 1:(2*T-1)-2
     if (n % 2 == 0)
         @constraint(model, [i=2:3], y[n, stage[n]] == y[n+i, stage[n]-1])
     else
@@ -51,7 +56,7 @@ for n in 1:(2T-1)-2
     end
 end
 
-for m = 1:2T-1
+for m = 1:2*T-1
     # create a StructuredModel linked to model with id m
     blk = StructuredModel(parent = model, id = m)
 
@@ -65,7 +70,7 @@ for m = 1:2T-1
     @constraint(blk, [t=stage[m]], y[m,t] <= maximum(d))
 
     # demand
-    if stage[m] == 0
+    if m == 1
         @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
     else
         @constraint(blk, [t=stage[m], i=1:stage[m]], y[m,t-i] + x[m,t] + w[m,t] - y[m,t] == d[m])
