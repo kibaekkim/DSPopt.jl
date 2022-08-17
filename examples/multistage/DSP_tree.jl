@@ -2,7 +2,7 @@ using StructJuMP
 using DSPopt
 using MPI
 
-T = 3; # number of stages - MUST BE >= 3 !!
+T = 10; # number of stages - MUST BE >= 3 !!
 
 # scenario tree w/ T stages
 nodes = 1:(2^T)-1; # nodes in tree
