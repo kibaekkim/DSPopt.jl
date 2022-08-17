@@ -29,7 +29,7 @@ end
 
 model = Model(GLPK.Optimizer)
 
-ystages = Vector{Vector{Int64}}(undef, T); # index for y
+ystages = Vector{Vector{Int64}}(undef, T); # index for y 
 ystages[1] = [0];
 for t in 2:T
     ystages[t] = [t-2,t-1];
