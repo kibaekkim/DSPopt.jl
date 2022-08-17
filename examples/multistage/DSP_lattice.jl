@@ -26,7 +26,7 @@ MPI.Init()
 DSPopt.parallelize(MPI.COMM_WORLD)
 
 # create StructuredModel with number of scenarios
-model = StructuredModel(num_scenarios = 2^(T-1))
+model = StructuredModel(num_scenarios = length(nodes))
 
 ystages = Vector{Vector{Int64}}(undef, T); # index for y
 ystages[1] = [0];
@@ -38,7 +38,7 @@ end
 # VARIABLES
 @variable(model, x[n in nodes,  t in stage[n]] >= 0, Int)
 @variable(model, w[n in nodes,  t in stage[n]] >= 0, Int)
-@variable(model, y[n in 1:2T-1, t in ystages[stage[n]+1]] >= 0, Int)
+@variable(model, y[n in nodes, t in ystages[stage[n]+1]] >= 0, Int)
 
 # OBJECTIVE (parent)
 @objective(model, Min,
@@ -72,8 +72,10 @@ for m = 1:2*T-1
     # demand
     if m == 1
         @constraint(blk, x[m,0] + w[m,0] - y[m,0] == d[m])
+    elseif m == 2 || m == 3
+        @constraint(blk, [t=stage[m]], y[m,t-1] + x[m,t] + w[m,t] - y[m,t] == d[m])
     else
-        @constraint(blk, [t=stage[m], i=1:stage[m]], y[m,t-i] + x[m,t] + w[m,t] - y[m,t] == d[m])
+        @constraint(blk, [t=stage[m], i=1:2], y[m,t-i] + x[m,t] + w[m,t] - y[m,t] == d[m])
     end
 end
 
