@@ -38,8 +38,8 @@ end
 # OBJECTIVE
 @objective(model, Min,
     (x[1,0] + 3*w[1,0] + 0.5*y[1,0]) +
-    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]] for n=2:3) +
-    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] for n=4:5)
+    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] + 0.5*y[n,stage[n]] for n=2:2*T-3) +
+    (1/2)*sum(x[n,stage[n]] + 3*w[n,stage[n]] for n=2*T-2:2*T-1)
         )
 
 # CONSTRAINTS
@@ -57,8 +57,10 @@ for n in nodes, t in stage[n]
     # demand
     if n == 1
         @constraint(model, x[n,t] + w[n,t] - y[n,t] == d[n])
+    elseif n == 2 || n == 3
+        @constraint(model, [t=stage[n]], y[n,t-1] + x[n,t] + w[n,t] - y[n,t] == d[n])
     else
-        @constraint(model, [i=1:stage[n]], y[n,t-i] + x[n,t] + w[n,t] - y[n,t] == d[n])
+        @constraint(model, [t=stage[n], i=1:2], y[n,t-i] + x[n,t] + w[n,t] - y[n,t] == d[n])
     end
 end
 
