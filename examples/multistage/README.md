@@ -6,11 +6,9 @@ The example is described in page 270 of the following book:
 
 ## Problem Description
 
-#### Scenario Tree
-Consider a 3-stage scenario tree with a single root node at stage 1 and two nodes in stage 2, each of which has two children nodes in stage 3 (thus four leaf nodes). Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario tree, and $\alpha(n)$ the ancestor of node $n$ (with $n = 1$ denoting the root node). 
+__Scenario Tree__: Consider a 3-stage scenario tree with a single root node at stage 1 and two nodes in stage 2, each of which has two children nodes in stage 3 (thus four leaf nodes). Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario tree, and $\alpha(n)$ the ancestor of node $n$ (with $n = 1$ denoting the root node). 
 
-#### Scenario Lattice 
-Consider a 3-stage scenario lattice with a single root node at stage 1 with two children nodes in stage 2, and two leaf nodes in stage 3 that are each connected to both of the nodes in stage 2. Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario lattice (with $n = 1$ denoting the root node). 
+__Scenario Lattice__: Consider a 3-stage scenario lattice with a single root node at stage 1 with two children nodes in stage 2, and two leaf nodes in stage 3 that are each connected to both of the nodes in stage 2. Let $\mathcal{N}$ denote the set of nodes, $\mathcal{L} \subset \mathcal{N}$ the set of leaf nodes in the scenario lattice (with $n = 1$ denoting the root node). 
 
 The air conditioning production planning problem from Birge & Louveaux can be modeled as a stochastic integer program using both a scenario tree or a scenario lattice, either by nodal or scenario decomposition:
 
@@ -30,7 +28,7 @@ $h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}
 We can incorporate non-anticipativity into the model endogenously by having $t$ correspond to the stage of node $n$ for all decision variables. We can also model non-anticipativity explicitly by having:
 - $t$ denote the stage of node $n$ for variables $x$ and $w$.
 - Decision variables $y_{n}^{t}$ AND $y_{n}^{t-1}$ for each node $n$, where $t$ denotes the stage of node $n$. 
-- Including the non-anticipativity constraints: $y_{1}^{0} = y_{2}^{0} = y_{3}^{0}, \ y_{2}^{1} = y_{4}^{1} = y_{5}^{1}, \ y_{3}^{1} = y_{6}^{1} = y_{7}^{1}$.
+- Including the non-anticipativity constraints: $y_{\lfloor \frac{n}{2} \rfloor}^{t-1} = y_{n}^{t-1}$.
 
 #### Nodal Decomposition using a Scenario Lattice:
 
@@ -56,9 +54,11 @@ $$\eqalign{
 
 Similarly with the nodal decomposition, we can incorporate non-anticipativity into the model endogenously or explicitly. 
 
+## File Descriptions
+
 The files in this folder include: 
 
-### A deterministic integer programming model using a scenario tree (scenario decomposition)
+#### A deterministic integer programming model using a scenario tree (scenario decomposition)
 
 Solution for JuMP model
 
@@ -67,16 +67,16 @@ Solution for JuMP model
 - $w_1^* = 0, w_2^* = [0, 0]^{\top}, w_3^* = [0, 0, 0, 1]^{\top}$
 - $y_1^* = 1, y_2^* = [1, 0]^{\top}, y_3^* = [0, 0, 0, 0]^{\top}$
 
-### A deterministic integer programming model using a scenario tree (nodal decomposition)
+#### A deterministic integer programming model using a scenario tree (nodal decomposition)
 
 Solution for JuMP model
 
 - Optimal objective value: 6.25
 - $x^* = [2, 1, 2, 0, 2, 1, 2]^{\top}$
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
-- $y^* = [1, 1, 0, 0, 0, 0, 0]^{\top}$
+- $y^* = [1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0]^{\top}$
 
-### A three-stage integer programming model using a scenario tree (nodal decomposition)
+#### A three-stage integer programming model using a scenario tree (nodal decomposition)
 
 Solution for DSP model 
 
@@ -85,7 +85,7 @@ Solution for DSP model
 - $w^* = [0, 0, 0, 0, 0, 0, 1]^{\top}$
 - $y^* = [1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0]^{\top}$
 
-### A three-stage integer programming model using a scenario lattice (nodal decomposition)
+#### A three-stage integer programming model using a scenario lattice (nodal decomposition)
 
 Solution for DSP model 
 
@@ -99,6 +99,12 @@ Solution for JuMP model
 - Optimal objective value: 6.5
 - $x^* = [2, 0, 2, 1, 2]^{\top}$
 - $w^* = [0, 0, 0, 0, 1]^{\top}$
-- $y^* = [1, 0, 0, 0, 0]^{\top}$
+- $y^* = [1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0]^{\top}$
 
-The JuMP models can be found in "scen_decomp.jl" (scen decomp w/ scen tree), "node_decomp.jl" (nodal decomp w/ scen tree), and "jump_markov.jl" (nodal decomp w/ scen lattice). The DSP models can be found in "three_stages.jl" (nodal decomp w/ scen tree) and "markov.jl" (nodal decomp w/ scen lattice). 
+The JuMP models can be found in [``` scen_decomp.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/scen_decomp.jl) (scen decomp w/ scen tree), [``` node_decomp.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/node_decomp.jl) (nodal decomp w/ scen tree), and [``` jump_lattice.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/jump_lattice.jl) (nodal decomp w/ scen lattice). The DSP models can be found in [``` DSP_tree.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/DSP_tree.jl) (nodal decomp w/ scen tree) and [``` DSP_lattice.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/DSP_lattice.jl) (nodal decomp w/ scen lattice). 
+
+## Notes
+
+- Each model (except [``` scen_decomp.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/scen_decomp.jl)) can be extended to more than 3 stages by changing the ``` T = ``` parameter in each file to the number of stages of your choosing. 
+- In [``` DSP_tree.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/DSP_tree.jl), the ``` num_scenarios ``` parameter corresponds to the number of scenarios represented in the scenario tree. However, in [``` DSP_lattice.jl ```](https://github.com/kibaekkim/DSPopt.jl/blob/ra/multistage/examples/multistage/DSP_lattice.jl), the same parameter corresponds to the number of nodes in the scenario lattice. 
+- For the DSP models, each variable must have an upper bound. 
