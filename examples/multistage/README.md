@@ -23,10 +23,12 @@ $$\eqalign{
 
 <center>where $h_{1}^{\top} = h_{2}^{\top} = {\left\lbrack \matrix{1 & 3 & 0.5} \right\rbrack}, \ h_{3}^{\top} = {\left\lbrack \matrix{1 & 3} \right\rbrack}, \ d^{\top} = {\left\lbrack \matrix{1 & 1 & 3 & 1 & 3 & 1 & 3} \right\rbrack}, \ \text{and} \ H_{n} = \\{(x_{n},w_{n},y_{n}) \in \mathbb{Z}^{3}_{+} \ | \ x_n \leq 2 \\}.$<center>
 
-<center>We can incorporate non-anticipativity into the model endogenously by having $t$ correspond to the stage of node $n$ for all decision variables. We can also model non-anticipativity explicitly by having:
-- $t$ denote the stage of node $n$ for variables $x$ and $w$.
-- Decision variables $y_{n}^{t}$ AND $y_{n}^{t-1}$ for each node $n$, where $t$ denotes the stage of node $n$. 
-- Including the non-anticipativity constraints: $y_{\lfloor \frac{n}{2} \rfloor}^{t-1} = y_{n}^{t-1}$.<center>
+<center>We can incorporate non-anticipativity into the model endogenously by having $t$ correspond to the stage of node $n$ for all decision variables. We can also model non-anticipativity explicitly by having:<center>
+<ul>
+    <li>$t$ denote the stage of node $n$ for variables $x$ and $w$;</li>
+    <li>Decision variables $y_{n}^{t}$ AND $y_{n}^{t-1}$ for each node $n$, where $t$ denotes the stage of node $n$;</li>
+    <li>Including the non-anticipativity constraints: $y_{\lfloor \frac{n}{2} \rfloor}^{t-1} = y_{n}^{t-1}$.</li>
+</ul>
 
 #### Nodal Decomposition using a Scenario Lattice: 
   
